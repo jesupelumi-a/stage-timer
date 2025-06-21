@@ -1,0 +1,20 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="96" cy="96" r="96" fill="#3B82F6"/>
+  
+  <!-- Timer icon -->
+  <circle cx="96" cy="96" r="60" fill="none" stroke="white" stroke-width="8"/>
+  
+  <!-- Clock hands -->
+  <line x1="96" y1="96" x2="96" y2="56" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <line x1="96" y1="96" x2="126" y2="96" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Center dot -->
+  <circle cx="96" cy="96" r="6" fill="white"/>
+  
+  <!-- Hour markers -->
+  <circle cx="96" cy="46" r="3" fill="white"/>
+  <circle cx="146" cy="96" r="3" fill="white"/>
+  <circle cx="96" cy="146" r="3" fill="white"/>
+  <circle cx="46" cy="96" r="3" fill="white"/>
+</svg>

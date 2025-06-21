@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- Use utility-first approach for styling components
+- Keep custom styles to a minimum and use Tailwind's configuration for theming
+- Use responsive utility classes for mobile-first design
+- Implement proper accessibility with Tailwind's accessibility utilities

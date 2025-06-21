@@ -1,0 +1,10 @@
+---
+description: Best practices for using Shadcn UI components
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+- Use `npx shadcn@latest add <component-name>` to add new components
+- Follow Shadcn UI's component structure and naming conventions
+- Customize components using Tailwind CSS classes
+- Document the installation command when adding new Shadcn UI components
+- Keep shadcn components in the frontend/packages/ui project so we can share it with all our frontend apps.

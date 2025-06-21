@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+
+  <!-- App Info -->
+  <title>Church Stage Timer</title>
+  <meta name="description"
+    content="Professional timer application for church services with display and control views" />
+  <meta name="keywords" content="church, timer, stage, presentation, countdown, stopwatch" />
+  <meta name="author" content="Church Stage Timer" />
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#3b82f6" />
+  <meta name="background-color" content="#1f2937" />
+  <meta name="display" content="standalone" />
+  <meta name="orientation" content="any" />
+
+  <!-- iOS PWA Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Stage Timer" />
+
+  <!-- Android PWA Support -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="Stage Timer" />
+
+  <!-- Windows PWA Support -->
+  <meta name="msapplication-TileColor" content="#3b82f6" />
+  <meta name="msapplication-TileImage" content="/icon.svg" />
+
+  <!-- Prevent zoom on mobile -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <!-- Preload critical resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+
+  <!-- Fallback for users with JavaScript disabled -->
+  <noscript>
+    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+      <h1>Church Stage Timer</h1>
+      <p>This application requires JavaScript to function properly.</p>
+      <p>Please enable JavaScript in your browser and refresh the page.</p>
+    </div>
+  </noscript>
+</body>
+
+</html>

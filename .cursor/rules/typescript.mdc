@@ -1,0 +1,80 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# TypeScript Best Practices
+Version: 1.0.0
+Last Updated: 2024-03-26
+
+## Type System Usage
+- Use TypeScript's strict mode (`"strict": true` in tsconfig.json)
+- Prefer `interface` over `type` for object definitions unless you need specific type features
+- Use `satisfies` operator for type validation while preserving literal types
+- Use `as const` assertions for readonly arrays and objects
+- Avoid type assertions (`as`) unless absolutely necessary
+- Use template literal types for string manipulation
+- Implement proper discriminated unions for complex state management
+
+## Modern TypeScript Features
+- Use the `Partial<T>` utility type for optional fields
+- Use `Record<K, V>` for dynamic key-value pairs
+- Leverage `Pick<T, K>` and `Omit<T, K>` for type composition
+- Use `ReturnType<T>` for inferring function return types
+- Implement `infer` keyword in conditional types when needed
+- Use `typeof` for type inference from values
+- Use `keyof` for type-safe property access
+
+## Null and Undefined Handling
+- Use optional chaining (`?.`) for nullable property access
+- Implement nullish coalescing (`??`) for default values
+- Avoid explicit `null` checks with optional parameters
+- Use non-null assertion (`!`) only when you're absolutely certain
+
+## Type Safety
+- Avoid `any` type - use `unknown` for truly unknown types
+- Use `never` type for exhaustive checks
+- Implement proper error types extending `Error`
+- Use branded types for type-safe identifiers
+- Use readonly arrays and tuples where applicable
+- Implement proper generic constraints with `extends`
+
+## Type Declarations
+- Keep type declarations close to where they're used
+- Use descriptive type names that indicate their purpose
+- Export types that are used across multiple files
+- Use type predicates for type narrowing
+- Implement proper index signatures for dynamic objects
+
+## Best Practices
+- Use TypeScript's built-in utility types when possible
+- Implement proper error handling with custom error types
+- Use type-safe event handling with proper event types
+- Keep type definitions DRY (Don't Repeat Yourself)
+- Use mapped types for maintaining type relationships
+- Implement proper generic type parameters with constraints
+
+## Integration with HANYA
+- Use Zod for runtime type validation
+- Implement proper DTOs for API requests/responses
+- Use proper typing for database models with Drizzle
+- Implement proper typing for state management with Zustand
+- Use proper typing for React Query hooks
+
+## Performance Considerations
+- Avoid excessive type complexity that might impact IDE performance
+- Use type imports (`import type`) for better tree-shaking
+- Implement proper type caching for complex types
+- Use proper type inference instead of explicit types when possible
+
+## Code Organization
+- Keep type definitions organized and well-documented
+- Use namespaces sparingly and prefer modules
+- Implement proper barrel exports for types
+- Keep related types together in dedicated type files
+
+- Use strict null checks to prevent null pointer exceptions
+- Prefer interfaces over types for better extensibility
+- Use type guards and assertions for runtime type checking
+- Implement proper type inference to reduce type annotations
+- Use zod for runtime type validation and schema definition

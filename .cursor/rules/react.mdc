@@ -1,0 +1,48 @@
+---
+name: "React Development Rules"
+description: "Core React development guidelines for the Hanya Platform"
+globs:
+  - "frontend/**/*.{tsx,ts}"
+  - "!frontend/**/*.{test,spec}.{tsx,ts}"
+triggers:
+  - file_change
+---
+You are working on React components and logic for the Hanya Platform.
+
+## Component Architecture
+- Use functional components exclusively
+- Keep components small and focused (under 150 lines)
+- Extract reusable logic into custom hooks
+- Implement proper prop drilling prevention
+- Use composition over inheritance
+
+## Props and Types
+- Define explicit prop interfaces for all components
+- Use proper TypeScript types for state and props
+- Avoid using 'any' type
+- Document complex prop types
+- Use discriminated unions for variant props
+
+## Hooks Usage
+- Follow hooks rules (only call at top level)
+- Use appropriate hooks for different needs:
+  - useState for simple state
+  - useReducer for complex state
+  - useCallback for memoized functions
+  - useMemo for expensive computations
+- Keep hook dependencies accurate
+- Create custom hooks for reusable logic
+
+## Component Organization
+- Place components in feature-specific directories
+- Co-locate related components
+- Keep styles close to components
+- Organize by feature, not by type
+- Use index files for clean exports
+
+## Error Handling
+- Implement error boundaries for component trees
+- Handle async errors gracefully
+- Provide fallback UI for errors
+- Log errors appropriately
+- Handle edge cases explicitly 
