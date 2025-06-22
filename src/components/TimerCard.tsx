@@ -183,8 +183,8 @@ export function TimerCard({
   // Calculate progress percentage for background (0-100)
   const getProgressPercentage = (): number => {
     if (timer.type !== 'countdown' || timer.initialTime <= 0) return 0;
-    const progress =
-      ((timer.initialTime - timer.currentTime) / timer.initialTime) * 100;
+    // Use elapsedTime for consistency with TimerPreview
+    const progress = (timer.elapsedTime / timer.initialTime) * 100;
     return Math.max(0, Math.min(100, progress));
   };
 
@@ -198,6 +198,13 @@ export function TimerCard({
     if (timer.type === 'stopwatch') {
       return currentTimeDisplay || getCurrentTime('12h');
     }
+    // For countdown timers, calculate the remaining time directly from elapsedTime and initialTime
+    // This allows negative values to be displayed when the timer has expired
+    if (timer.type === 'countdown') {
+      const remainingTime = timer.initialTime - timer.elapsedTime;
+      return getDisplayTime(remainingTime, true, false);
+    }
+    // For other timer types, use currentTime
     return getDisplayTime(timer.currentTime, true, false);
   };
 

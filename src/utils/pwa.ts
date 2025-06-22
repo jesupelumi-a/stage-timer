@@ -5,7 +5,7 @@
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
   readonly userChoice: Promise<{
-    outcome: "accepted" | "dismissed";
+    outcome: 'accepted' | 'dismissed';
     platform: string;
   }>;
   prompt(): Promise<void>;
@@ -23,23 +23,23 @@ let deferredPrompt: BeforeInstallPromptEvent | null = null;
  * Register the service worker
  */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if ("serviceWorker" in navigator) {
+  if ('serviceWorker' in navigator) {
     try {
-      const registration = await navigator.serviceWorker.register("/sw.js");
+      const registration = await navigator.serviceWorker.register('/sw.js');
 
-      console.log("Service Worker registered successfully:", registration);
+      console.log('Service Worker registered successfully:', registration);
 
       // Listen for updates
-      registration.addEventListener("updatefound", () => {
+      registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
         if (newWorker) {
-          newWorker.addEventListener("statechange", () => {
+          newWorker.addEventListener('statechange', () => {
             if (
-              newWorker.state === "installed" &&
+              newWorker.state === 'installed' &&
               navigator.serviceWorker.controller
             ) {
               // New content is available, prompt user to refresh
-              if (confirm("New version available! Refresh to update?")) {
+              if (confirm('New version available! Refresh to update?')) {
                 window.location.reload();
               }
             }
@@ -47,13 +47,28 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
         }
       });
 
+      registration.onupdatefound = () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.onstatechange = () => {
+            if (
+              newWorker.state === 'installed' &&
+              navigator.serviceWorker.controller
+            ) {
+              // A new update is ready, reload page to activate
+              window.location.reload(); // 🚀 this reloads when SW is updated
+            }
+          };
+        }
+      };
+
       return registration;
     } catch (error) {
-      console.error("Service Worker registration failed:", error);
+      console.error('Service Worker registration failed:', error);
       return null;
     }
   } else {
-    console.log("Service Worker not supported");
+    console.log('Service Worker not supported');
     return null;
   }
 }
@@ -77,12 +92,12 @@ export async function showInstallPrompt(): Promise<boolean> {
     await deferredPrompt.prompt();
     const choiceResult = await deferredPrompt.userChoice;
 
-    console.log("Install prompt result:", choiceResult.outcome);
+    console.log('Install prompt result:', choiceResult.outcome);
 
     deferredPrompt = null;
-    return choiceResult.outcome === "accepted";
+    return choiceResult.outcome === 'accepted';
   } catch (error) {
-    console.error("Error showing install prompt:", error);
+    console.error('Error showing install prompt:', error);
     return false;
   }
 }
@@ -92,10 +107,10 @@ export async function showInstallPrompt(): Promise<boolean> {
  */
 export function isStandalone(): boolean {
   return (
-    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia('(display-mode: standalone)').matches ||
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window.navigator as any).standalone === true ||
-    document.referrer.includes("android-app://")
+    document.referrer.includes('android-app://')
   );
 }
 
@@ -113,22 +128,22 @@ export function isMobile(): boolean {
  */
 export function initializePWA(): void {
   // Listen for the beforeinstallprompt event
-  window.addEventListener("beforeinstallprompt", (e) => {
-    console.log("Before install prompt event fired");
+  window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('Before install prompt event fired');
     e.preventDefault();
     deferredPrompt = e as BeforeInstallPromptEvent;
 
     // Dispatch custom event to notify the app
-    window.dispatchEvent(new CustomEvent("pwa-installable"));
+    window.dispatchEvent(new CustomEvent('pwa-installable'));
   });
 
   // Listen for app installed event
-  window.addEventListener("appinstalled", () => {
-    console.log("PWA was installed");
+  window.addEventListener('appinstalled', () => {
+    console.log('PWA was installed');
     deferredPrompt = null;
 
     // Dispatch custom event to notify the app
-    window.dispatchEvent(new CustomEvent("pwa-installed"));
+    window.dispatchEvent(new CustomEvent('pwa-installed'));
   });
 
   // Register service worker
@@ -139,12 +154,12 @@ export function initializePWA(): void {
  * Request notification permission
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
-  if ("Notification" in window) {
+  if ('Notification' in window) {
     const permission = await Notification.requestPermission();
-    console.log("Notification permission:", permission);
+    console.log('Notification permission:', permission);
     return permission;
   }
-  return "denied";
+  return 'denied';
 }
 
 /**
@@ -154,10 +169,10 @@ export function showNotification(
   title: string,
   options: NotificationOptions = {}
 ): Notification | null {
-  if ("Notification" in window && Notification.permission === "granted") {
+  if ('Notification' in window && Notification.permission === 'granted') {
     return new Notification(title, {
-      icon: "/icon.svg",
-      badge: "/icon.svg",
+      icon: '/icon.svg',
+      badge: '/icon.svg',
       ...options,
     });
   }
@@ -168,7 +183,7 @@ export function showNotification(
  * Check if notifications are supported and permitted
  */
 export function canShowNotifications(): boolean {
-  return "Notification" in window && Notification.permission === "granted";
+  return 'Notification' in window && Notification.permission === 'granted';
 }
 
 /**

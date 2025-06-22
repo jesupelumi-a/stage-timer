@@ -129,8 +129,14 @@ export function TimerPreview({
       return `${displayHours}:${minutes}:${seconds}`;
     }
 
-    // Use currentTime for consistency with TimerCard component
-    // This ensures controller and display show exactly the same values
+    // For countdown timers, calculate the remaining time directly from elapsedTime and initialTime
+    // This allows negative values to be displayed when the timer has expired
+    if (timer.type === 'countdown') {
+      const remainingTime = timer.initialTime - timer.elapsedTime;
+      return getDisplayTime(remainingTime, true, false);
+    }
+
+    // For other timer types, use currentTime
     return getDisplayTime(timer.currentTime, true, false);
   };
 
