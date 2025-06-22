@@ -6,6 +6,7 @@ interface UseMultipleTimersReturn {
   timers: Timer[];
   activeTimer: Timer | null;
   activeTimerId: string | null;
+  initializeTimerCollection: (collection: TimerCollection) => void;
   addTimer: (
     name: string,
     duration: number,
@@ -151,6 +152,17 @@ export function useMultipleTimers(
           return prev;
         }
 
+        // Pause all other running timers first
+        prev.timers.forEach((t) => {
+          if (t.id !== targetId && t.state.status === 'running') {
+            const intervalId = intervalRefs.current.get(t.id);
+            if (intervalId) {
+              clearInterval(intervalId);
+              intervalRefs.current.delete(t.id);
+            }
+          }
+        });
+
         // Set start time
         if (timer.state.status === 'idle') {
           startTimeRefs.current.set(targetId, Date.now());
@@ -196,7 +208,16 @@ export function useMultipleTimers(
                   pausedTime: undefined, // Clear paused time when resuming
                 },
               }
-            : t
+            : t.state.status === 'running'
+              ? {
+                  ...t,
+                  state: {
+                    ...t.state,
+                    status: 'paused' as TimerStatus,
+                    pausedTime: Date.now(),
+                  },
+                }
+              : t
         );
 
         return {
@@ -299,6 +320,22 @@ export function useMultipleTimers(
       pauseTimer(timerId);
     },
     [pauseTimer]
+  );
+
+  // Initialize timer collection (for loading from Firebase)
+  const initializeTimerCollection = useCallback(
+    (collection: TimerCollection) => {
+      // Clear all existing intervals first
+      intervalRefs.current.forEach((intervalId) => {
+        clearInterval(intervalId);
+      });
+      intervalRefs.current.clear();
+      startTimeRefs.current.clear();
+      pausedTimeRefs.current.clear();
+
+      setTimerCollection(collection);
+    },
+    []
   );
 
   // Add new timer
@@ -494,8 +531,20 @@ export function useMultipleTimers(
       const timer = prev.timers.find((t) => t.id === timerId);
       if (!timer) return prev;
 
-      const newCurrentTime =
-        newType === 'countdown' ? timer.state.initialTime : 0;
+      // Handle different timer types appropriately
+      let newCurrentTime: number;
+      switch (newType) {
+        case 'countdown':
+          newCurrentTime = timer.state.initialTime;
+          break;
+        case 'countup':
+        case 'stopwatch':
+        case 'hidden':
+          newCurrentTime = 0;
+          break;
+        default:
+          newCurrentTime = 0;
+      }
 
       const updatedTimers = prev.timers.map((t) =>
         t.id === timerId
@@ -598,6 +647,7 @@ export function useMultipleTimers(
     timers: timerCollection.timers.sort((a, b) => a.order - b.order),
     activeTimer,
     activeTimerId: timerCollection.activeTimerId,
+    initializeTimerCollection,
     addTimer,
     deleteTimer,
     selectTimer,

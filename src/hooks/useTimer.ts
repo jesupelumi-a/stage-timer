@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { TimerState, TimerType, TimerStatus } from "../types";
-import { DEFAULT_TIMER_STATE } from "../types";
-import { getElapsedTime, isValidTime } from "../utils/time";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { TimerState, TimerType, TimerStatus } from '../types';
+import { DEFAULT_TIMER_STATE } from '../types';
+import { getElapsedTime, isValidTime } from '../utils/time';
 
 interface UseTimerReturn {
   timer: TimerState;
@@ -22,7 +22,7 @@ export function useTimer(
   onTick?: (currentTime: number) => void
 ): UseTimerReturn {
   const [timer, setTimerState] = useState<TimerState>(DEFAULT_TIMER_STATE);
-  const intervalRef = useRef<number | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const pausedTimeRef = useRef<number>(0);
 
@@ -37,7 +37,7 @@ export function useTimer(
 
   // Handle timer expiration
   useEffect(() => {
-    if (timer.status === "expired" && onExpire) {
+    if (timer.status === 'expired' && onExpire) {
       onExpire();
     }
   }, [timer.status, onExpire]);
@@ -45,29 +45,29 @@ export function useTimer(
   // Main timer tick function
   const tick = useCallback(() => {
     setTimerState((prevTimer) => {
-      if (prevTimer.status !== "running" || !startTimeRef.current) {
+      if (prevTimer.status !== 'running' || !startTimeRef.current) {
         return prevTimer;
       }
 
       const elapsed =
         getElapsedTime(startTimeRef.current) - pausedTimeRef.current;
       let newTime: number;
-      let newStatus: TimerStatus = "running";
+      let newStatus: TimerStatus = 'running';
 
       switch (prevTimer.type) {
-        case "countdown":
+        case 'countdown':
           newTime = Math.max(0, prevTimer.initialTime - elapsed);
           if (newTime <= 0) {
             newTime = 0;
-            newStatus = "expired";
+            newStatus = 'expired';
           }
           break;
 
-        case "countup":
+        case 'countup':
           newTime = elapsed;
           break;
 
-        case "stopwatch":
+        case 'stopwatch':
           newTime = elapsed;
           break;
 
@@ -92,20 +92,20 @@ export function useTimer(
 
   // Start the timer
   const start = useCallback(() => {
-    if (timer.status === "expired") {
+    if (timer.status === 'expired') {
       return; // Cannot start an expired timer
     }
 
     setTimerState((prevTimer) => {
-      if (prevTimer.status === "running") {
+      if (prevTimer.status === 'running') {
         return prevTimer; // Already running
       }
 
       // Set start time
-      if (prevTimer.status === "idle") {
+      if (prevTimer.status === 'idle') {
         startTimeRef.current = Date.now();
         pausedTimeRef.current = 0;
-      } else if (prevTimer.status === "paused") {
+      } else if (prevTimer.status === 'paused') {
         // Resume from pause - adjust start time to account for pause duration
         const pauseDuration = Date.now() - (prevTimer.pausedTime || Date.now());
         pausedTimeRef.current += pauseDuration / 1000;
@@ -113,7 +113,7 @@ export function useTimer(
 
       return {
         ...prevTimer,
-        status: "running",
+        status: 'running',
         startTime: startTimeRef.current || undefined,
       };
     });
@@ -127,13 +127,13 @@ export function useTimer(
 
   // Pause the timer
   const pause = useCallback(() => {
-    if (timer.status !== "running") {
+    if (timer.status !== 'running') {
       return;
     }
 
     setTimerState((prevTimer) => ({
       ...prevTimer,
-      status: "paused",
+      status: 'paused',
       pausedTime: Date.now(),
     }));
 
@@ -147,10 +147,10 @@ export function useTimer(
   const reset = useCallback(() => {
     setTimerState((prevTimer) => {
       const resetTime =
-        prevTimer.type === "countdown" ? prevTimer.initialTime : 0;
+        prevTimer.type === 'countdown' ? prevTimer.initialTime : 0;
       return {
         ...prevTimer,
-        status: "idle",
+        status: 'idle',
         currentTime: resetTime,
         startTime: undefined,
         pausedTime: undefined,
@@ -173,9 +173,9 @@ export function useTimer(
 
   // Set timer duration and type
   const setTimerConfig = useCallback((duration: number, type: TimerType) => {
-    console.log("Setting timer to ", duration, " seconds of types ", type);
+    console.log('Setting timer to ', duration, ' seconds of types ', type);
     if (!isValidTime(duration)) {
-      console.error("Invalid timer duration:", duration);
+      console.error('Invalid timer duration:', duration);
       return;
     }
 
@@ -186,15 +186,16 @@ export function useTimer(
     }
 
     // const initialTime = type === "countdown" ? duration : 0;
-    const currentTime = type === "countdown" ? duration : 0;
+    const currentTime = type === 'countdown' ? duration : 0;
 
     setTimerState({
       type,
-      status: "idle",
+      status: 'idle',
       currentTime,
       initialTime: duration,
       startTime: undefined,
       pausedTime: undefined,
+      elapsedTime: 0,
     });
 
     startTimeRef.current = null;
@@ -203,7 +204,7 @@ export function useTimer(
 
   // Adjust timer by adding/subtracting seconds
   const adjustTime = useCallback((seconds: number) => {
-    setTimerState(prevTimer => {
+    setTimerState((prevTimer) => {
       let newTime = prevTimer.currentTime + seconds;
 
       // For countdown timers, ensure we don't go below 0 or above initial time
@@ -222,13 +223,13 @@ export function useTimer(
   }, []);
 
   // Computed values
-  const isRunning = timer.status === "running";
-  const isPaused = timer.status === "paused";
-  const isExpired = timer.status === "expired";
+  const isRunning = timer.status === 'running';
+  const isPaused = timer.status === 'paused';
+  const isExpired = timer.status === 'expired';
 
   // Calculate progress (0-1 for countdown, 0+ for countup/stopwatch)
   const progress =
-    timer.type === "countdown" && timer.initialTime > 0
+    timer.type === 'countdown' && timer.initialTime > 0
       ? Math.max(
           0,
           Math.min(

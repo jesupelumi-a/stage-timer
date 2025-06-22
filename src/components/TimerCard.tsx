@@ -68,11 +68,24 @@ export function TimerCard({
   useEffect(() => {
     if (timer.type === 'stopwatch') {
       const updateTime = () => {
-        setCurrentTimeDisplay(getCurrentTime('12h'));
+        // Format as hour:minutes:seconds for consistency with TimerPreview
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+
+        // Convert to 12-hour format
+        const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+
+        setCurrentTimeDisplay(`${displayHours}:${minutes}:${seconds} ${ampm}`);
       };
       updateTime(); // Set immediately
       const interval = setInterval(updateTime, 1000);
       return () => clearInterval(interval);
+    } else {
+      // Clear the display when not stopwatch type
+      setCurrentTimeDisplay('');
     }
   }, [timer.type]);
 
@@ -157,8 +170,9 @@ export function TimerCard({
         onStart();
       }, 0);
     } else {
-      // If this timer is already active, toggle play/pause based on current state
-      if (isRunning) {
+      // If this timer is already active, toggle play/pause based on current timer status
+      // Use timer.status directly instead of isRunning prop to avoid sync issues
+      if (timer.status === 'running') {
         onPause();
       } else {
         onStart();
@@ -178,6 +192,9 @@ export function TimerCard({
 
   // Get timer display text
   const getTimerDisplayText = () => {
+    if (timer.type === 'hidden') {
+      return 'Hidden';
+    }
     if (timer.type === 'stopwatch') {
       return currentTimeDisplay || getCurrentTime('12h');
     }
@@ -226,7 +243,7 @@ export function TimerCard({
               className={cn(
                 'text-xs text-neutral-400',
                 isActive && 'text-blue-400',
-                isRunning && 'text-red-400'
+                timer.status === 'running' && 'text-red-400'
               )}
             >
               Start
@@ -241,7 +258,7 @@ export function TimerCard({
               className={cn(
                 'my-1 border-b border-dashed border-neutral-600 text-sm font-semibold leading-5 ring-0 transition-colors hover:border-white focus:border-white',
                 isActive && 'border-blue-500',
-                isRunning && 'border-red-500',
+                timer.status === 'running' && 'border-red-500',
                 isLoading && 'cursor-not-allowed opacity-50'
               )}
             >
@@ -256,7 +273,7 @@ export function TimerCard({
               className={cn(
                 'text-xs text-neutral-400',
                 isActive && 'text-blue-400',
-                isRunning && 'text-red-400'
+                timer.status === 'running' && 'text-red-400'
               )}
             >
               Duration
@@ -270,7 +287,7 @@ export function TimerCard({
               className={cn(
                 'my-1 border-b border-dashed border-neutral-600 text-base font-semibold leading-5 ring-0 transition-colors hover:border-white focus:border-white',
                 isActive && 'border-blue-500',
-                isRunning && 'border-red-500'
+                timer.status === 'running' && 'border-red-500'
               )}
             >
               {durationText}
@@ -285,7 +302,7 @@ export function TimerCard({
                 className={cn(
                   'w-full bg-transparent text-neutral-500 focus:outline-none',
                   isActive && 'text-blue-400',
-                  isRunning && 'text-red-400'
+                  timer.status === 'running' && 'text-red-400'
                 )}
               >
                 <option value="countdown">Countdown</option>
@@ -372,13 +389,19 @@ export function TimerCard({
                   handlePlayClick();
                 }}
                 className={`flex h-9 w-12 items-center justify-center rounded border border-neutral-600 bg-neutral-800 transition-colors ${
-                  isRunning
+                  timer.status === 'running'
                     ? 'text-red-500 hover:bg-red-600 hover:text-white'
                     : 'text-green-500 hover:bg-green-600 hover:text-white'
                 }`}
-                title={isRunning ? 'Pause Timer' : 'Start Timer'}
+                title={
+                  timer.status === 'running' ? 'Pause Timer' : 'Start Timer'
+                }
               >
-                {isRunning ? <MdPause size={20} /> : <MdPlayArrow size={20} />}
+                {timer.status === 'running' ? (
+                  <MdPause size={20} />
+                ) : (
+                  <MdPlayArrow size={20} />
+                )}
               </button>
               <button
                 onClick={(e) => {

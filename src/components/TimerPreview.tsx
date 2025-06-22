@@ -2,6 +2,8 @@ import { cn } from '../lib/utils';
 import type { TimerState, Message, DisplaySettings } from '../types';
 import { getCurrentTime, getDisplayTime } from '../utils/time';
 import { useEffect, useState, useRef } from 'react';
+import { MdFullscreen, MdFullscreenExit } from 'react-icons/md';
+import whiteLogo from '../assets/white-logo.png';
 
 interface TimerPreviewProps {
   timer: TimerState;
@@ -12,6 +14,7 @@ interface TimerPreviewProps {
   isActive?: boolean;
   className?: string;
   displayMode?: 'preview' | 'display'; // 'preview' for control interface, 'display' for TV
+  onToggleFullscreen?: () => void; // Optional fullscreen toggle function
 }
 
 export function TimerPreview({
@@ -23,6 +26,7 @@ export function TimerPreview({
   isActive = false,
   className = '',
   displayMode = 'preview',
+  onToggleFullscreen,
 }: TimerPreviewProps) {
   const isDarkTheme = settings.theme === 'dark';
   const [currentTime, setCurrentTime] = useState(
@@ -33,6 +37,20 @@ export function TimerPreview({
     width: 400,
     height: 225,
   });
+
+  // Track fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Track fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () =>
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Update current time every second
   useEffect(() => {
@@ -48,6 +66,20 @@ export function TimerPreview({
 
     return () => clearInterval(interval);
   }, [settings.timeFormat]);
+
+  // Update timer text every second for stopwatch (Time of Day) type
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  useEffect(() => {
+    if (timer.type === 'stopwatch') {
+      // Force re-render every second for live time updates
+      const interval = setInterval(() => {
+        setForceUpdate((prev) => prev + 1);
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [timer.type]);
 
   // Track container size for responsive font sizing
   useEffect(() => {
@@ -77,21 +109,29 @@ export function TimerPreview({
     };
   }, []);
 
-  // Get timer display text
+  // Get timer display text - use same logic as TimerCard for consistency
   const getTimerText = () => {
+    if (timer.type === 'hidden') {
+      // For "Hidden", return empty string to hide the timer text
+      return '';
+    }
+
     if (timer.type === 'stopwatch') {
-      // For "Time of Day", show current time in 12-hour format
-      return getCurrentTime('12h');
+      // For "Time of Day", show current time in hour:minutes:seconds format
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+
+      // Convert to 12-hour format
+      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+
+      return `${displayHours}:${minutes}:${seconds}`;
     }
 
-    if (timer.type === 'countdown') {
-      // For countdown: calculate display time based on duration - elapsed time
-      const displayTime = timer.initialTime - timer.elapsedTime;
-      return getDisplayTime(displayTime, true, false);
-    }
-
-    // For countup, use elapsed time directly
-    return getDisplayTime(timer.elapsedTime, true, false);
+    // Use currentTime for consistency with TimerCard component
+    // This ensures controller and display show exactly the same values
+    return getDisplayTime(timer.currentTime, true, false);
   };
 
   // Calculate responsive font size based on container dimensions
@@ -112,7 +152,7 @@ export function TimerPreview({
       timerText.includes(':') && timerText.split(':').length === 3;
 
     if (hasHours) {
-      baseFontSize *= 0.75; // Reduce by 25% when showing hours
+      baseFontSize *= 0.7; // Reduce by 25% when showing hours
     }
 
     // Different min/max values for display mode
@@ -128,13 +168,12 @@ export function TimerPreview({
   const timerText = getTimerText();
 
   // Calculate progress percentage for countdown (0% = depleted, 100% = full)
+  // Use same logic as TimerCard for consistency
   const getProgressPercentage = () => {
     if (timer.type !== 'countdown' || timer.initialTime <= 0) return 100;
-    // Calculate the display time (duration - elapsed time)
-    const displayTime = timer.initialTime - timer.elapsedTime;
-    // When timer goes negative, show 0% (fully depleted)
-    if (displayTime <= 0) return 0;
-    return Math.max(0, Math.min(100, (displayTime / timer.initialTime) * 100));
+    // Use currentTime directly for consistency with TimerCard
+    const progress = (timer.currentTime / timer.initialTime) * 100;
+    return Math.max(0, Math.min(100, progress));
   };
 
   const progressPercentage = getProgressPercentage();
@@ -149,7 +188,7 @@ export function TimerPreview({
         <div
           className={cn(
             'absolute inset-0 flex flex-col overflow-hidden rounded-md border-2',
-            isActive && timer.status === 'running'
+            isActive && timer.status === 'running' && displayMode === 'preview'
               ? 'border-red-500'
               : 'border-neutral-800',
             isDarkTheme ? 'bg-[#1D1918] text-white' : 'bg-white text-gray-900'
@@ -157,6 +196,17 @@ export function TimerPreview({
         >
           {/* Header with timer name and current time */}
           <div className="relative flex h-[8%] items-start justify-between p-3">
+            {/* App Icon (White Logo) in top left */}
+            <div className="absolute left-4 top-4">
+              <img
+                src={whiteLogo}
+                alt="App Icon"
+                className={cn(
+                  displayMode === 'display' ? 'size-12' : 'h-6 w-6'
+                )}
+              />
+            </div>
+
             {/* Timer Name */}
             <div className="absolute left-1/2 top-4 -translate-x-1/2 text-left">
               {timerName && (
@@ -170,8 +220,60 @@ export function TimerPreview({
                 </div>
               )}
             </div>
-            {/* Current Time */}
-            <div className="absolute right-4 top-4 text-right">
+            {/* Logo and Current Time */}
+            <div className="absolute right-4 top-4 flex items-center gap-2 text-right">
+              {/* Logo */}
+              <svg
+                width={displayMode === 'display' ? '40' : '24'}
+                height={displayMode === 'display' ? '40' : '24'}
+                viewBox="0 0 100 100"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={cn(
+                  'opacity-60',
+                  isDarkTheme ? 'text-white' : 'text-gray-600'
+                )}
+              >
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="none"
+                />
+                <circle cx="50" cy="50" r="3" fill="currentColor" />
+                <line
+                  x1="50"
+                  y1="50"
+                  x2="50"
+                  y2="20"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="50"
+                  y1="50"
+                  x2="70"
+                  y2="50"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <text
+                  x="50"
+                  y="85"
+                  textAnchor="middle"
+                  fontFamily="Arial, sans-serif"
+                  fontSize="8"
+                  fill="currentColor"
+                >
+                  TIMER
+                </text>
+              </svg>
+
+              {/* Current Time */}
               <div
                 className={cn(
                   'font-bold',
@@ -186,21 +288,23 @@ export function TimerPreview({
           {/* Main timer display - takes up most space */}
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
             <div className="w-full text-center">
-              <div
-                className={cn(
-                  'text-center font-black leading-none',
-                  isDarkTheme ? 'text-white' : 'text-gray-900',
-                  timer.type === 'countdown' &&
-                    timer.initialTime - timer.elapsedTime < 0 &&
-                    'text-red-500'
-                )}
-                style={{
-                  fontSize: `${responsiveFontSize}px`,
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                {timerText}
-              </div>
+              {timer.type !== 'hidden' && (
+                <div
+                  className={cn(
+                    'text-center font-black leading-none',
+                    isDarkTheme ? 'text-white' : 'text-gray-900',
+                    timer.type === 'countdown' &&
+                      timer.initialTime - timer.elapsedTime < 0 &&
+                      'text-red-500'
+                  )}
+                  style={{
+                    fontSize: `${responsiveFontSize}px`,
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  {timerText}
+                </div>
+              )}
             </div>
           </div>
 
@@ -236,6 +340,35 @@ export function TimerPreview({
                 />
               </div>
             </div>
+          )}
+
+          {/* Fullscreen toggle button - only show in display mode */}
+          {displayMode === 'display' && onToggleFullscreen && (
+            <button
+              onClick={onToggleFullscreen}
+              className={cn(
+                'absolute bottom-4 right-4 z-10 rounded-lg p-2 transition-all duration-200 hover:scale-110',
+                isDarkTheme
+                  ? 'bg-[#1D1918] text-white hover:bg-black/50'
+                  : 'bg-white/30 text-gray-900 hover:bg-white/50',
+                'backdrop-blur-sm'
+              )}
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            >
+              {isFullscreen ? (
+                <MdFullscreenExit
+                  className={cn(
+                    displayMode === 'display' ? 'size-8' : 'size-6'
+                  )}
+                />
+              ) : (
+                <MdFullscreen
+                  className={cn(
+                    displayMode === 'display' ? 'size-8' : 'size-6'
+                  )}
+                />
+              )}
+            </button>
           )}
         </div>
       </div>

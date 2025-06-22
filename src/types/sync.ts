@@ -1,10 +1,14 @@
 // Multi-Device Sync Types
 
-export type DeviceRole = "controller" | "display" | "auto";
+export type DeviceRole = 'controller' | 'display' | 'auto';
 
-export type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
+export type ConnectionStatus =
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'error';
 
-export type SyncMethod = "webrtc" | "websocket" | "local";
+export type SyncMethod = 'webrtc' | 'websocket' | 'local';
 
 export interface DeviceInfo {
   id: string;
@@ -33,22 +37,22 @@ export interface SyncMessage {
 }
 
 export type SyncMessageType =
-  | "device_info"
-  | "timer_state"
-  | "timer_action"
-  | "message_update"
-  | "settings_update"
-  | "blackout_toggle"
-  | "flash_trigger"
-  | "heartbeat"
-  | "ack"
-  | "error";
+  | 'device_info'
+  | 'timer_state'
+  | 'timer_action'
+  | 'message_update'
+  | 'settings_update'
+  | 'blackout_toggle'
+  | 'flash_trigger'
+  | 'heartbeat'
+  | 'ack'
+  | 'error';
 
 // Timer sync data
 export interface TimerSyncData {
   timers: any[]; // Timer array
   activeTimerId: string | null;
-  action?: "start" | "pause" | "reset" | "add" | "delete" | "update";
+  action?: 'start' | 'pause' | 'reset' | 'add' | 'delete' | 'update';
   timerId?: string;
   updates?: any;
 }
@@ -57,7 +61,7 @@ export interface TimerSyncData {
 export interface MessageSyncData {
   currentMessage: any | null;
   messageQueue: any[];
-  action?: "show" | "hide" | "clear" | "queue";
+  action?: 'show' | 'hide' | 'clear' | 'queue';
   message?: any;
 }
 
@@ -122,7 +126,7 @@ export interface SyncEventHandlers {
 
 // Default configurations
 export const DEFAULT_CONNECTION_CONFIG: ConnectionConfig = {
-  method: "webrtc",
+  method: 'webrtc',
   autoConnect: true,
   reconnectAttempts: 5,
   heartbeatInterval: 5000, // 5 seconds
@@ -131,8 +135,8 @@ export const DEFAULT_CONNECTION_CONFIG: ConnectionConfig = {
 
 export const DEFAULT_WEBRTC_CONFIG: WebRTCConfig = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
   ],
   dataChannelConfig: {
     ordered: true,
@@ -140,11 +144,11 @@ export const DEFAULT_WEBRTC_CONFIG: WebRTCConfig = {
   },
 };
 
-export const DEFAULT_DEVICE_INFO: Omit<DeviceInfo, "id" | "name"> = {
-  role: "auto",
+export const DEFAULT_DEVICE_INFO: Omit<DeviceInfo, 'id' | 'name'> = {
+  role: 'auto',
   lastSeen: Date.now(),
-  capabilities: ["timer", "messages", "settings"],
-  version: "1.0.0",
+  capabilities: ['timer', 'messages', 'settings'],
+  version: '1.0.0',
 };
 
 // Utility functions
@@ -157,61 +161,68 @@ export function generateMessageId(): string {
 }
 
 export function isValidDeviceRole(role: string): role is DeviceRole {
-  return ["controller", "display", "auto"].includes(role);
+  return ['controller', 'display', 'auto'].includes(role);
 }
 
 export function isValidSyncMethod(method: string): method is SyncMethod {
-  return ["webrtc", "websocket", "local"].includes(method);
+  return ['webrtc', 'websocket', 'local'].includes(method);
 }
 
 // Message validation
 export function validateSyncMessage(message: any): message is SyncMessage {
   return (
     message &&
-    typeof message.id === "string" &&
-    typeof message.type === "string" &&
-    typeof message.timestamp === "number" &&
-    typeof message.senderId === "string" &&
+    typeof message.id === 'string' &&
+    typeof message.type === 'string' &&
+    typeof message.timestamp === 'number' &&
+    typeof message.senderId === 'string' &&
     message.data !== undefined
   );
 }
 
 // Device name generation
 export function generateDeviceName(): string {
-  const adjectives = ["Quick", "Smart", "Bright", "Swift", "Clear", "Sharp"];
-  const nouns = ["Timer", "Display", "Controller", "Device", "Screen", "Panel"];
-  
+  const adjectives = ['Quick', 'Smart', 'Bright', 'Swift', 'Clear', 'Sharp'];
+  const nouns = ['Timer', 'Display', 'Controller', 'Device', 'Screen', 'Panel'];
+
   const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
   const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  
+
   return `${adjective} ${noun}`;
 }
 
 // Connection health check
-export function isConnectionHealthy(lastSync: number, heartbeatInterval: number): boolean {
+export function isConnectionHealthy(
+  lastSync: number,
+  heartbeatInterval: number
+): boolean {
   return Date.now() - lastSync < heartbeatInterval * 3;
 }
 
 // Error types
 export class SyncError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public recoverable: boolean = true
-  ) {
+  public code: string;
+  public recoverable: boolean;
+
+  constructor(message: string, code: string, recoverable: boolean = true) {
     super(message);
-    this.name = "SyncError";
+    this.name = 'SyncError';
+    this.code = code;
+    this.recoverable = recoverable;
   }
 }
 
 export class ConnectionError extends SyncError {
-  constructor(message: string, public method: SyncMethod) {
-    super(message, "CONNECTION_ERROR");
+  public method: SyncMethod;
+
+  constructor(message: string, method: SyncMethod) {
+    super(message, 'CONNECTION_ERROR');
+    this.method = method;
   }
 }
 
 export class ValidationError extends SyncError {
   constructor(message: string) {
-    super(message, "VALIDATION_ERROR", false);
+    super(message, 'VALIDATION_ERROR', false);
   }
 }

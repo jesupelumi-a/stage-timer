@@ -1,6 +1,7 @@
 import {
   doc,
   setDoc,
+  getDoc,
   onSnapshot,
   updateDoc,
   serverTimestamp,
@@ -69,6 +70,30 @@ export class SimpleFirebaseService {
       console.error('❌ Firebase authentication failed:', error);
       this.setConnectionStatus('error');
       throw new Error(`Authentication failed: ${error}`);
+    }
+  }
+
+  // Fetch existing data from Firebase (if any)
+  async fetchExistingData(): Promise<SharedTimerData | null> {
+    await this.authenticate();
+
+    const docRef = doc(db, 'timer-data', this.SHARED_DOC_ID);
+
+    try {
+      console.log('🔍 Fetching existing data from Firebase...');
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data() as SharedTimerData;
+        console.log('✅ Found existing data in Firebase');
+        return data;
+      } else {
+        console.log('📭 No existing data found in Firebase');
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch existing data:', error);
+      throw error;
     }
   }
 

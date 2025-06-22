@@ -1,21 +1,21 @@
-import React from "react";
-import type { TimerState, TimerType } from "../types";
-import { getDisplayTime } from "../utils/time";
+import React from 'react';
+import type { TimerState, TimerType } from '../types';
+import { getDisplayTime } from '../utils/time';
 
 interface TimerProps {
   timer: TimerState;
   isExpired: boolean;
   showMilliseconds?: boolean;
   className?: string;
-  size?: "small" | "medium" | "large" | "xlarge";
+  size?: 'small' | 'medium' | 'large' | 'xlarge';
 }
 
 export function Timer({
   timer,
   isExpired,
   showMilliseconds = false,
-  className = "",
-  size = "large",
+  className = '',
+  size = 'large',
 }: TimerProps) {
   const timerText = getDisplayTime(
     timer.currentTime,
@@ -25,33 +25,33 @@ export function Timer({
 
   const getSizeClass = () => {
     switch (size) {
-      case "small":
-        return "text-4xl md:text-6xl";
-      case "medium":
-        return "text-6xl md:text-8xl";
-      case "large":
-        return "text-8xl md:text-10xl lg:text-11xl";
-      case "xlarge":
-        return "text-10xl md:text-11xl lg:text-12xl";
+      case 'small':
+        return 'text-4xl md:text-6xl';
+      case 'medium':
+        return 'text-6xl md:text-8xl';
+      case 'large':
+        return 'text-8xl md:text-10xl lg:text-11xl';
+      case 'xlarge':
+        return 'text-10xl md:text-11xl lg:text-12xl';
       default:
-        return "text-8xl md:text-10xl lg:text-11xl";
+        return 'text-8xl md:text-10xl lg:text-11xl';
     }
   };
 
   const getStatusClass = () => {
     if (isExpired) {
-      return "text-red-500 animate-flash";
+      return 'text-red-500 animate-flash';
     }
 
     switch (timer.status) {
-      case "running":
-        return "text-green-400";
-      case "paused":
-        return "text-yellow-400";
-      case "expired":
-        return "text-red-500";
+      case 'running':
+        return 'text-green-400';
+      case 'paused':
+        return 'text-yellow-400';
+      case 'expired':
+        return 'text-red-500';
       default:
-        return "text-white";
+        return 'text-white';
     }
   };
 
@@ -63,9 +63,9 @@ export function Timer({
         {timerText}
       </div>
 
-      <div className="mt-4 text-lg md:text-xl lg:text-2xl font-medium opacity-75 capitalize">
+      <div className="mt-4 text-lg font-medium capitalize opacity-75 md:text-xl lg:text-2xl">
         {timer.type}
-        {timer.status !== "idle" && (
+        {timer.status !== 'idle' && (
           <span className="ml-2 text-sm md:text-base lg:text-lg">
             ({timer.status})
           </span>
@@ -93,29 +93,29 @@ export function TimerControls({
   onReset,
   onStop,
   isPaused,
-  className = "",
+  className = '',
 }: TimerControlsProps) {
-  const canStart = timer.status === "idle" || timer.status === "paused";
-  const canPause = timer.status === "running";
-  const canReset = timer.status !== "idle";
-  const canStop = timer.status !== "idle";
+  const canStart = timer.status === 'idle' || timer.status === 'paused';
+  const canPause = timer.status === 'running';
+  const canReset = timer.status !== 'idle';
+  const canStop = timer.status !== 'idle';
 
   return (
     <div
-      className={`timer-controls flex flex-wrap gap-3 justify-center ${className}`}
+      className={`timer-controls flex flex-wrap justify-center gap-3 ${className}`}
     >
       <button
         onClick={onStart}
         disabled={!canStart}
-        className="control-button control-button-success disabled:opacity-50 disabled:cursor-not-allowed"
+        className="control-button control-button-success disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isPaused ? "Resume" : "Start"}
+        {isPaused ? 'Resume' : 'Start'}
       </button>
 
       <button
         onClick={onPause}
         disabled={!canPause}
-        className="control-button control-button-warning disabled:opacity-50 disabled:cursor-not-allowed"
+        className="control-button control-button-warning disabled:cursor-not-allowed disabled:opacity-50"
       >
         Pause
       </button>
@@ -123,7 +123,7 @@ export function TimerControls({
       <button
         onClick={onReset}
         disabled={!canReset}
-        className="control-button control-button-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+        className="control-button control-button-secondary disabled:cursor-not-allowed disabled:opacity-50"
       >
         Reset
       </button>
@@ -131,7 +131,7 @@ export function TimerControls({
       <button
         onClick={onStop}
         disabled={!canStop}
-        className="control-button control-button-danger disabled:opacity-50 disabled:cursor-not-allowed"
+        className="control-button control-button-danger disabled:cursor-not-allowed disabled:opacity-50"
       >
         Stop
       </button>
@@ -148,7 +148,7 @@ interface TimerSetupProps {
 export function TimerSetup({
   onSetTimer,
   currentType,
-  className = "",
+  className = '',
 }: TimerSetupProps) {
   const [hours, setHours] = React.useState(0);
   const [minutes, setMinutes] = React.useState(5);
@@ -157,38 +157,39 @@ export function TimerSetup({
 
   const handleSetTimer = () => {
     const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-    if (totalSeconds > 0 || timerType !== "countdown") {
+    if (totalSeconds > 0 || timerType !== 'countdown') {
       onSetTimer(totalSeconds, timerType);
     }
   };
 
-  const isValid = timerType !== "countdown" || hours + minutes + seconds > 0;
+  const isValid = timerType !== 'countdown' || hours + minutes + seconds > 0;
 
   return (
     <div className={`timer-setup space-y-4 ${className}`}>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="mb-2 block text-sm font-medium text-gray-700">
           Timer Type
         </label>
         <select
           value={timerType}
           onChange={(e) => setTimerType(e.target.value as TimerType)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="countdown">Countdown</option>
           <option value="countup">Count Up</option>
-          <option value="stopwatch">Stopwatch</option>
+          <option value="stopwatch">Time of Day</option>
+          <option value="hidden">Hidden</option>
         </select>
       </div>
 
-      {timerType === "countdown" && (
+      {timerType === 'countdown' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="mb-2 block text-sm font-medium text-gray-700">
             Duration
           </label>
           <div className="flex space-x-2">
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">Hours</label>
+              <label className="mb-1 block text-xs text-gray-500">Hours</label>
               <input
                 type="number"
                 value={hours}
@@ -197,11 +198,11 @@ export function TimerSetup({
                 }
                 min="0"
                 max="23"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">
+              <label className="mb-1 block text-xs text-gray-500">
                 Minutes
               </label>
               <input
@@ -214,11 +215,11 @@ export function TimerSetup({
                 }
                 min="0"
                 max="59"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">
+              <label className="mb-1 block text-xs text-gray-500">
                 Seconds
               </label>
               <input
@@ -231,7 +232,7 @@ export function TimerSetup({
                 }
                 min="0"
                 max="59"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -241,7 +242,7 @@ export function TimerSetup({
       <button
         onClick={handleSetTimer}
         disabled={!isValid}
-        className="control-button control-button-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+        className="control-button control-button-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
       >
         Set Timer
       </button>
@@ -263,12 +264,12 @@ interface TimerPresetsProps {
 export function TimerPresets({
   presets,
   onSelectPreset,
-  className = "",
+  className = '',
 }: TimerPresetsProps) {
   if (presets.length === 0) {
     return (
       <div className={`timer-presets ${className}`}>
-        <p className="text-sm text-gray-500 italic">
+        <p className="text-sm italic text-gray-500">
           No timer presets available
         </p>
       </div>
@@ -277,8 +278,8 @@ export function TimerPresets({
 
   return (
     <div className={`timer-presets ${className}`}>
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Timers</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+      <h3 className="mb-3 text-sm font-semibold text-gray-700">Quick Timers</h3>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {presets.map((preset) => (
           <button
             key={preset.id}

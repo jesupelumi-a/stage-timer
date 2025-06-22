@@ -1,5 +1,5 @@
 // Timer Types
-export type TimerType = 'countdown' | 'countup' | 'stopwatch';
+export type TimerType = 'countdown' | 'countup' | 'stopwatch' | 'hidden';
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'expired';
 
@@ -33,6 +33,7 @@ export interface Timer {
 export interface TimerCollection {
   timers: Timer[];
   activeTimerId: string | null;
+  lastUpdated?: number; // Timestamp for sync tracking
 }
 
 // Message Types
@@ -229,4 +230,5 @@ export const DEFAULT_TIMER_COLLECTION: TimerCollection = {
     },
   ],
   activeTimerId: 'timer-1',
+  lastUpdated: Date.now(),
 };

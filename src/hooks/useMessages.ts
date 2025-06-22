@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import type { Message, MessagePreset } from "../types";
+import { useState, useCallback, useEffect, useRef } from 'react';
+import type { Message, MessagePreset } from '../types';
 
 interface UseMessagesReturn {
   currentMessage: Message | null;
@@ -15,7 +15,7 @@ interface UseMessagesReturn {
 export function useMessages(): UseMessagesReturn {
   const [currentMessage, setCurrentMessage] = useState<Message | null>(null);
   const [messageQueue, setMessageQueue] = useState<Message[]>([]);
-  const timeoutRef = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Clear timeout on unmount
   useEffect(() => {

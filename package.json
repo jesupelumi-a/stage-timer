@@ -7,9 +7,15 @@
     "dev": "vite",
     "dev:fresh": "node scripts/dev-fresh.js",
     "build": "tsc -b && vite build",
+    "build:prod": "NODE_ENV=production tsc -b tsconfig.prod.json && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "clear-cache": "rm -rf node_modules/.vite && rm -rf dist"
+    "clear-cache": "rm -rf node_modules/.vite && rm -rf dist",
+    "deploy": "npm run build:prod && firebase deploy --only hosting",
+    "deploy:preview": "npm run build:prod && firebase hosting:channel:deploy preview",
+    "firebase:serve": "npm run build && firebase serve --only hosting",
+    "firebase:emulators": "firebase emulators:start --only hosting",
+    "predeploy": "npm run lint && npm run build:prod"
   },
   "dependencies": {
     "clsx": "^2.1.1",

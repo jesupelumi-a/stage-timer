@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSimpleFirebaseSync } from '../hooks/useSimpleFirebaseSync';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -33,11 +39,29 @@ export function DisplayRoute() {
     onDataChange: (data) => {
       // Update display state when shared data changes
       console.log('📺 Display received data update:', data);
-      console.log(
-        '📺 Active timer status:',
-        data.timers?.timers?.find((t) => t.id === data.timers?.activeTimerId)
-          ?.state?.status
+
+      const activeTimerData = data.timers?.timers?.find(
+        (t) => t.id === data.timers?.activeTimerId
       );
+      console.log('📺 Active timer:', {
+        id: activeTimerData?.id,
+        name: activeTimerData?.name,
+        status: activeTimerData?.state?.status,
+        type: activeTimerData?.state?.type,
+        initialTime: activeTimerData?.state?.initialTime,
+        currentTime: activeTimerData?.state?.currentTime,
+        elapsedTime: activeTimerData?.state?.elapsedTime,
+      });
+
+      // Store the timestamp when this data was last updated
+      if (data.timers?.lastUpdated) {
+        dataTimestampRef.current = data.timers.lastUpdated;
+      } else {
+        // If no timestamp, use current time
+        dataTimestampRef.current = Date.now();
+      }
+
+      // Immediately update all state to ensure instant reflection of changes
       setTimers(data.timers);
       setCurrentMessage(data.currentMessage);
       setMessageQueue(data.messageQueue);
@@ -59,81 +83,140 @@ export function DisplayRoute() {
   }, [navigate]);
 
   // Real-time timer state calculation
-  const [realtimeTimer, setRealtimeTimer] = useState<any>(null);
+  const [realtimeTimer, setRealtimeTimer] = useState<typeof baseTimer | null>(
+    null
+  );
   const lastSyncTimeRef = useRef<number>(Date.now());
+  const dataTimestampRef = useRef<number>(Date.now());
 
   // Get current timer for display
   const activeTimer = timers.timers.find((t) => t.id === timers.activeTimerId);
-  const baseTimer = activeTimer?.state || {
-    type: 'countdown' as const,
-    status: 'idle' as const,
-    currentTime: 0,
-    initialTime: 0,
-    elapsedTime: 0,
-  };
+  const baseTimer = useMemo(
+    () =>
+      activeTimer?.state || {
+        type: 'countdown' as const,
+        status: 'idle' as const,
+        currentTime: 0,
+        initialTime: 0,
+        elapsedTime: 0,
+      },
+    [activeTimer?.state]
+  );
 
-  // Update real-time timer calculation
+  // Force immediate update when active timer changes
+  useEffect(() => {
+    if (activeTimer) {
+      // Reset real-time timer to immediately reflect any changes
+      setRealtimeTimer(null);
+    }
+  }, [activeTimer]);
+
+  // Update real-time timer calculation - simplified for immediate updates
   useEffect(() => {
     if (!activeTimer) {
-      console.log('📺 No active timer, using base timer');
       setRealtimeTimer(baseTimer);
       return;
     }
 
-    console.log(
-      '📺 Timer status changed:',
-      baseTimer.status,
-      'elapsed:',
-      baseTimer.elapsedTime,
-      'initial:',
-      baseTimer.initialTime,
-      'type:',
-      baseTimer.type
-    );
-
-    // Update the last sync time when we receive new data
+    // Always update the last sync time when we receive new data
     lastSyncTimeRef.current = Date.now();
-    setRealtimeTimer(baseTimer);
+
+    // Calculate the time difference between when data was saved and now
+    const now = Date.now();
+    const dataAge = dataTimestampRef.current
+      ? (now - dataTimestampRef.current) / 1000
+      : 0;
+
+    // For immediate updates, always start with the base timer and adjust for data age
+    let adjustedElapsedTime =
+      baseTimer.elapsedTime + (baseTimer.status === 'running' ? dataAge : 0);
+
+    // Apply the same 1-second delay logic as the controller for consistency
+    if (baseTimer.status === 'running') {
+      if (adjustedElapsedTime < 1) {
+        adjustedElapsedTime = 0;
+      } else {
+        adjustedElapsedTime = adjustedElapsedTime - 1;
+      }
+    }
+
+    // Calculate currentTime based on timer type for consistency
+    let adjustedCurrentTime: number;
+    switch (baseTimer.type) {
+      case 'countdown':
+        adjustedCurrentTime = Math.max(
+          0,
+          baseTimer.initialTime - adjustedElapsedTime
+        );
+        break;
+      case 'countup':
+      case 'stopwatch':
+      case 'hidden':
+        adjustedCurrentTime = adjustedElapsedTime;
+        break;
+      default:
+        adjustedCurrentTime = baseTimer.currentTime;
+    }
+
+    const adjustedTimer = {
+      ...baseTimer,
+      elapsedTime: adjustedElapsedTime,
+      currentTime: adjustedCurrentTime,
+    };
+
+    // Immediately set the adjusted timer
+    setRealtimeTimer(adjustedTimer);
 
     // Only start real-time updates if timer is actually running
     if (baseTimer.status === 'running') {
-      console.log('📺 Starting real-time updates for running timer');
       const interval = setInterval(() => {
         const now = Date.now();
         const timeSinceSync = (now - lastSyncTimeRef.current) / 1000;
 
-        setRealtimeTimer((prev: any) => {
+        setRealtimeTimer((prev) => {
           // Double-check that the timer is still running
           if (!prev || prev.status !== 'running') {
-            console.log('📺 Timer no longer running, stopping updates');
             return prev;
           }
 
-          const newElapsedTime = baseTimer.elapsedTime + timeSinceSync;
+          let newElapsedTime = adjustedElapsedTime + timeSinceSync;
+
+          // Add the same 1-second delay logic as the controller
+          // Add a small delay (1 second) before starting countdown to show full duration first
+          if (newElapsedTime < 1) {
+            newElapsedTime = 0;
+          } else {
+            newElapsedTime = newElapsedTime - 1;
+          }
+
+          // Calculate currentTime based on timer type for consistency with TimerCard
+          let newCurrentTime: number;
+          switch (prev.type) {
+            case 'countdown':
+              newCurrentTime = Math.max(0, prev.initialTime - newElapsedTime);
+              break;
+            case 'countup':
+            case 'stopwatch':
+            case 'hidden':
+              newCurrentTime = newElapsedTime;
+              break;
+            default:
+              newCurrentTime = prev.currentTime;
+          }
 
           return {
             ...prev,
             elapsedTime: newElapsedTime,
-            // Let TimerPreview calculate currentTime from elapsedTime
+            currentTime: newCurrentTime,
           };
         });
       }, 100); // Update every 100ms for smooth countdown
 
       return () => {
-        console.log('📺 Cleaning up real-time timer interval');
         clearInterval(interval);
       };
-    } else {
-      // If timer is not running, just use the base timer data as-is
-      console.log('📺 Timer not running, using static base timer data');
-      setRealtimeTimer(baseTimer);
     }
-  }, [
-    activeTimer?.id,
-    baseTimer.status,
-    baseTimer.elapsedTime,
-    baseTimer.initialTime,
-  ]); // More specific dependencies
+  }, [activeTimer, baseTimer]); // Include all properties that should trigger immediate updates
 
   const currentTimer = realtimeTimer || baseTimer;
 
@@ -143,14 +226,17 @@ export function DisplayRoute() {
     (currentTimer.type === 'countdown' &&
       currentTimer.elapsedTime >= currentTimer.initialTime);
 
-  // Keyboard shortcuts
-  useFullscreenKeyboard(() => {
+  // Fullscreen toggle function
+  const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
       document.documentElement.requestFullscreen();
     }
-  }, true);
+  }, []);
+
+  // Keyboard shortcuts
+  useFullscreenKeyboard(toggleFullscreen, true);
 
   // Show loading spinner while waiting for Firebase data
   const isLoading = !sharedData && connectionStatus === 'connected';
@@ -166,9 +252,6 @@ export function DisplayRoute() {
               className="mx-auto mb-4 border-white border-t-blue-500"
             />
             <div className="text-lg font-semibold text-white">Syncing...</div>
-            <div className="mt-2 text-sm text-gray-400">
-              Waiting for timer data
-            </div>
           </div>
         </div>
       ) : (
@@ -183,6 +266,7 @@ export function DisplayRoute() {
             isActive={true}
             displayMode="display"
             className="h-full w-full"
+            onToggleFullscreen={toggleFullscreen}
           />
         </div>
       )}

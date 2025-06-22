@@ -18,13 +18,17 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789:web:abcdef123456',
 };
 
-// Debug: Log the configuration being used
-console.log('🔧 Firebase Config:', {
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain,
-  hasApiKey:
-    !!firebaseConfig.apiKey && firebaseConfig.apiKey !== 'demo-api-key',
-});
+// Debug: Log the configuration being used (only in development)
+if (import.meta.env.DEV) {
+  console.log('🔧 Firebase Config:', {
+    projectId: firebaseConfig.projectId,
+    authDomain: firebaseConfig.authDomain,
+    hasApiKey:
+      !!firebaseConfig.apiKey && firebaseConfig.apiKey !== 'demo-api-key',
+    environment: import.meta.env.MODE,
+    useProduction: import.meta.env.VITE_USE_FIREBASE_PROD,
+  });
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -35,19 +39,26 @@ export const db = getFirestore(app);
 // Initialize Auth
 export const auth = getAuth(app);
 
-// Connect to emulators in development
+// Connect to emulators in development (only if not using production)
 if (import.meta.env.DEV && !import.meta.env.VITE_USE_FIREBASE_PROD) {
   try {
     // Only connect if not already connected
     if (!auth.emulatorConfig) {
       connectAuthEmulator(auth, 'http://localhost:9099');
+      console.log('🔧 Connected to Firebase Auth Emulator');
     }
     // Firestore emulator connection is handled differently
     connectFirestoreEmulator(db, 'localhost', 8080);
+    console.log('🔧 Connected to Firestore Emulator');
   } catch (error) {
-    // Emulators might already be connected
-    console.log('Firebase emulators already connected or not available');
+    // Emulators might already be connected or not available
+    console.log(
+      '⚠️ Firebase emulators already connected or not available:',
+      error
+    );
   }
+} else if (import.meta.env.PROD || import.meta.env.VITE_USE_FIREBASE_PROD) {
+  console.log('🚀 Using production Firebase services');
 }
 
 export default app;
