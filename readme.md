@@ -1,54 +1,129 @@
-# React + TypeScript + Vite
+# 🎯 StageTimer - Monorepo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A production-ready stage timer application with real-time multi-device sync, built with React, Node.js, Socket.io, and PostgreSQL.
 
-Currently, two official plugins are available:
+## 🏗️ Architecture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This is a monorepo containing:
 
-## Expanding the ESLint configuration
+- **`frontend/`** - React + Vite client with Zustand + TanStack Query
+- **`backend/`** - Express + Socket.io server with PostgreSQL
+- **`packages/db/`** - Shared Drizzle ORM schema and types
+- **`old/`** - Previous Firebase-based implementation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 Quick Start
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### Prerequisites
+
+- Node.js 18+
+- pnpm (recommended)
+- PostgreSQL database
+
+### Installation
+
+1. Clone and install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+2. Set up environment variables:
+   ```bash
+   cp backend/.env.example backend/.env
+   # Edit backend/.env with your database URL
+   ```
+
+3. Set up the database:
+   ```bash
+   pnpm --filter backend db:generate
+   pnpm --filter backend db:migrate
+   ```
+
+4. Start development servers:
+   ```bash
+   pnpm dev
+   ```
+
+This starts both frontend (http://localhost:5173) and backend (http://localhost:3001).
+
+## 🎮 Usage
+
+- **Controller**: http://localhost:5173/control - Timer management interface
+- **Display**: http://localhost:5173/ - Full-screen display for TV/projector
+- **Room-based**: Multiple timer setups can coexist with unique room slugs
+
+## 📁 Project Structure
+
+```
+stage-timer/
+├── frontend/           # React client
+│   ├── src/
+│   │   ├── components/ # UI components (timer-preview.tsx, etc.)
+│   │   ├── hooks/      # Custom hooks (use-timer-sessions.ts, etc.)
+│   │   ├── stores/     # Zustand stores
+│   │   └── lib/        # Utilities and API client
+├── backend/            # Express server
+│   ├── src/
+│   │   ├── routes/     # REST API endpoints
+│   │   ├── socket/     # Socket.io event handlers
+│   │   └── db/         # Database connection and migrations
+├── packages/db/        # Shared database schema
+│   └── src/
+│       ├── schema.ts   # Drizzle schema definitions
+│       └── types.ts    # TypeScript types
+└── old/               # Previous Firebase implementation
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🔧 Development Commands
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+# Install dependencies
+pnpm install
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+# Start all services
+pnpm dev
+
+# Start individual services
+pnpm dev:frontend
+pnpm dev:backend
+
+# Build all packages
+pnpm build
+
+# Database operations
+pnpm --filter backend db:generate  # Generate migrations
+pnpm --filter backend db:migrate   # Run migrations
+pnpm --filter backend db:studio    # Open Drizzle Studio
+
+# Linting and type checking
+pnpm lint
+pnpm type-check
 ```
+
+## 🚀 Deployment
+
+- **Frontend**: Deploy to Vercel
+- **Backend**: Deploy to Render
+- **Database**: PostgreSQL on Render (free tier available)
+
+## 🎯 Key Features
+
+- **Real-time Sync**: Socket.io for instant updates across devices
+- **Room-based**: Multi-tenant architecture with room isolation
+- **Modern Stack**: React 19, Express, PostgreSQL, TypeScript
+- **State Management**: Zustand + TanStack Query + Socket.io
+- **Type Safety**: Full TypeScript with shared types
+- **Scalable**: Designed for production use
+
+## 📝 Migration from Firebase
+
+The `old/` directory contains the previous Firebase implementation. Key improvements in the new architecture:
+
+- ✅ Eliminated Firebase costs and vendor lock-in
+- ✅ Better performance with local state + caching
+- ✅ Improved component decoupling
+- ✅ Room-based multi-tenancy
+- ✅ Full control over backend logic
+
+## 📄 License
+
+MIT

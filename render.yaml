@@ -1,0 +1,46 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: stage-timer-db
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.postgres
+    envVars:
+      - key: POSTGRES_DB
+        value: stage_timer
+      - key: POSTGRES_USER
+        value: stage_timer_user
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+
+  # Backend API
+  - type: web
+    name: stage-timer-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: stage-timer-db
+          property: connectionString
+      - key: FRONTEND_URL
+        value: https://stage-timer-frontend.vercel.app
+      - key: SOCKET_CORS_ORIGIN
+        value: https://stage-timer-frontend.vercel.app
+    healthCheckPath: /api/health
+    buildCommand: |
+      cd /opt/render/project/src
+      npm install -g pnpm
+      pnpm install --frozen-lockfile
+      pnpm run build:db
+      pnpm run build:backend
+    startCommand: |
+      cd backend
+      pnpm db:migrate
+      node dist/index.js

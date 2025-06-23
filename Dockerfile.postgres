@@ -1,0 +1,11 @@
+FROM postgres:15-alpine
+
+# Set environment variables
+ENV POSTGRES_DB=stage_timer
+ENV POSTGRES_USER=stage_timer_user
+
+# Copy initialization scripts if needed
+# COPY ./scripts/init.sql /docker-entrypoint-initdb.d/
+
+# Expose the PostgreSQL port
+EXPOSE 5432
