@@ -1,0 +1,442 @@
+{
+  "id": "dd80267d-1dd8-4daa-baeb-359f1325f5b8",
+  "prevId": "cde3e12f-563c-42ee-85cb-85d4de8a3727",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.messages": {
+      "name": "messages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "timer_id": {
+          "name": "timer_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'#ffffff'"
+        },
+        "bold": {
+          "name": "bold",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "uppercase": {
+          "name": "uppercase",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "index": {
+          "name": "index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "messages_timer_id_timers_id_fk": {
+          "name": "messages_timer_id_timers_id_fk",
+          "tableFrom": "messages",
+          "tableTo": "timers",
+          "columnsFrom": [
+            "timer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.rooms": {
+      "name": "rooms",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active_timer_id": {
+          "name": "active_timer_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "rooms_active_timer_id_timers_id_fk": {
+          "name": "rooms_active_timer_id_timers_id_fk",
+          "tableFrom": "rooms",
+          "tableTo": "timers",
+          "columnsFrom": [
+            "active_timer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "rooms_slug_unique": {
+          "name": "rooms_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.timer_sessions": {
+      "name": "timer_sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "timer_id": {
+          "name": "timer_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kickoff": {
+          "name": "kickoff",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deadline": {
+          "name": "deadline",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_stop": {
+          "name": "last_stop",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "session_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'stopped'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "timer_sessions_timer_id_timers_id_fk": {
+          "name": "timer_sessions_timer_id_timers_id_fk",
+          "tableFrom": "timer_sessions",
+          "tableTo": "timers",
+          "columnsFrom": [
+            "timer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.timers": {
+      "name": "timers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "room_id": {
+          "name": "room_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "''"
+        },
+        "extra": {
+          "name": "extra",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "''"
+        },
+        "appearance": {
+          "name": "appearance",
+          "type": "timer_appearance",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'COUNTDOWN'"
+        },
+        "type": {
+          "name": "type",
+          "type": "timer_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'DURATION'"
+        },
+        "trigger": {
+          "name": "trigger",
+          "type": "timer_trigger",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'MANUAL'"
+        },
+        "duration_ms": {
+          "name": "duration_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "yellow_warning_ms": {
+          "name": "yellow_warning_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 60000
+        },
+        "red_warning_ms": {
+          "name": "red_warning_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 30000
+        },
+        "index": {
+          "name": "index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "show_name": {
+          "name": "show_name",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "show_notes": {
+          "name": "show_notes",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "show_extra": {
+          "name": "show_extra",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "start_time": {
+          "name": "start_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "finish_time": {
+          "name": "finish_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finish_date": {
+          "name": "finish_date",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "timers_room_id_rooms_id_fk": {
+          "name": "timers_room_id_rooms_id_fk",
+          "tableFrom": "timers",
+          "tableTo": "rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.session_status": {
+      "name": "session_status",
+      "schema": "public",
+      "values": [
+        "running",
+        "paused",
+        "stopped"
+      ]
+    },
+    "public.timer_appearance": {
+      "name": "timer_appearance",
+      "schema": "public",
+      "values": [
+        "TOD",
+        "COUNTDOWN",
+        "COUNTUP",
+        "HIDDEN"
+      ]
+    },
+    "public.timer_trigger": {
+      "name": "timer_trigger",
+      "schema": "public",
+      "values": [
+        "MANUAL",
+        "SCHEDULED"
+      ]
+    },
+    "public.timer_type": {
+      "name": "timer_type",
+      "schema": "public",
+      "values": [
+        "DURATION",
+        "FIXED_TIME"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

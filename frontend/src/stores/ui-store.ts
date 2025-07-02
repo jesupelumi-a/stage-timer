@@ -1,5 +1,4 @@
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { useState, useCallback } from 'react';
 
 export interface UIState {
   // Panel visibility
@@ -24,97 +23,119 @@ export interface UIState {
   // Loading states
   isLoading: boolean;
   loadingMessage: string;
-
-  // Actions
-  setLeftPanelOpen: (open: boolean) => void;
-  setRightPanelOpen: (open: boolean) => void;
-  setSettingsPanelOpen: (open: boolean) => void;
-
-  setTimerModalOpen: (open: boolean) => void;
-  setMessageModalOpen: (open: boolean) => void;
-  setRoomModalOpen: (open: boolean) => void;
-
-  setFullscreenMode: (enabled: boolean) => void;
-  setBlackoutMode: (enabled: boolean) => void;
-  setFlashMode: (enabled: boolean) => void;
-
-  setActiveTimerId: (id: string | null) => void;
-  setSelectedRoomSlug: (slug: string | null) => void;
-
-  setLoading: (loading: boolean, message?: string) => void;
-
-  // Utility actions
-  closeAllModals: () => void;
-  toggleLeftPanel: () => void;
-  toggleRightPanel: () => void;
 }
 
-export const useUIStore = create<UIState>()(
-  devtools(
-    (set) => ({
-      // Initial state
-      leftPanelOpen: true,
-      rightPanelOpen: false,
-      settingsPanelOpen: false,
+// Simple hook to replace Zustand store
+export function useUIStore() {
+  const [state, setState] = useState<UIState>({
+    // Initial state
+    leftPanelOpen: true,
+    rightPanelOpen: false,
+    settingsPanelOpen: false,
 
+    timerModalOpen: false,
+    messageModalOpen: false,
+    roomModalOpen: false,
+
+    fullscreenMode: false,
+    blackoutMode: false,
+    flashMode: false,
+
+    activeTimerId: null,
+    selectedRoomSlug: null,
+
+    isLoading: false,
+    loadingMessage: '',
+  });
+
+  // Panel actions
+  const setLeftPanelOpen = useCallback((open: boolean) => {
+    setState(prev => ({ ...prev, leftPanelOpen: open }));
+  }, []);
+
+  const setRightPanelOpen = useCallback((open: boolean) => {
+    setState(prev => ({ ...prev, rightPanelOpen: open }));
+  }, []);
+
+  const setSettingsPanelOpen = useCallback((open: boolean) => {
+    setState(prev => ({ ...prev, settingsPanelOpen: open }));
+  }, []);
+
+  // Modal actions
+  const setTimerModalOpen = useCallback((open: boolean) => {
+    setState(prev => ({ ...prev, timerModalOpen: open }));
+  }, []);
+
+  const setMessageModalOpen = useCallback((open: boolean) => {
+    setState(prev => ({ ...prev, messageModalOpen: open }));
+  }, []);
+
+  const setRoomModalOpen = useCallback((open: boolean) => {
+    setState(prev => ({ ...prev, roomModalOpen: open }));
+  }, []);
+
+  // Display mode actions
+  const setFullscreenMode = useCallback((enabled: boolean) => {
+    setState(prev => ({ ...prev, fullscreenMode: enabled }));
+  }, []);
+
+  const setBlackoutMode = useCallback((enabled: boolean) => {
+    setState(prev => ({ ...prev, blackoutMode: enabled }));
+  }, []);
+
+  const setFlashMode = useCallback((enabled: boolean) => {
+    setState(prev => ({ ...prev, flashMode: enabled }));
+  }, []);
+
+  // Selection actions
+  const setActiveTimerId = useCallback((id: string | null) => {
+    setState(prev => ({ ...prev, activeTimerId: id }));
+  }, []);
+
+  const setSelectedRoomSlug = useCallback((slug: string | null) => {
+    setState(prev => ({ ...prev, selectedRoomSlug: slug }));
+  }, []);
+
+  // Loading actions
+  const setLoading = useCallback((loading: boolean, message = '') => {
+    setState(prev => ({ ...prev, isLoading: loading, loadingMessage: message }));
+  }, []);
+
+  // Utility actions
+  const closeAllModals = useCallback(() => {
+    setState(prev => ({
+      ...prev,
       timerModalOpen: false,
       messageModalOpen: false,
       roomModalOpen: false,
+      settingsPanelOpen: false,
+    }));
+  }, []);
 
-      fullscreenMode: false,
-      blackoutMode: false,
-      flashMode: false,
+  const toggleLeftPanel = useCallback(() => {
+    setState(prev => ({ ...prev, leftPanelOpen: !prev.leftPanelOpen }));
+  }, []);
 
-      activeTimerId: null,
-      selectedRoomSlug: null,
+  const toggleRightPanel = useCallback(() => {
+    setState(prev => ({ ...prev, rightPanelOpen: !prev.rightPanelOpen }));
+  }, []);
 
-      isLoading: false,
-      loadingMessage: '',
-
-      // Panel actions
-      setLeftPanelOpen: (open) => set({ leftPanelOpen: open }),
-      setRightPanelOpen: (open) => set({ rightPanelOpen: open }),
-      setSettingsPanelOpen: (open) => set({ settingsPanelOpen: open }),
-
-      // Modal actions
-      setTimerModalOpen: (open) => set({ timerModalOpen: open }),
-      setMessageModalOpen: (open) => set({ messageModalOpen: open }),
-      setRoomModalOpen: (open) => set({ roomModalOpen: open }),
-
-      // Display mode actions
-      setFullscreenMode: (enabled) => set({ fullscreenMode: enabled }),
-      setBlackoutMode: (enabled) => set({ blackoutMode: enabled }),
-      setFlashMode: (enabled) => set({ flashMode: enabled }),
-
-      // Selection actions
-      setActiveTimerId: (id) => set({ activeTimerId: id }),
-      setSelectedRoomSlug: (slug) => set({ selectedRoomSlug: slug }),
-
-      // Loading actions
-      setLoading: (loading, message = '') =>
-        set({ isLoading: loading, loadingMessage: message }),
-
-      // Utility actions
-      closeAllModals: () =>
-        set({
-          timerModalOpen: false,
-          messageModalOpen: false,
-          roomModalOpen: false,
-          settingsPanelOpen: false,
-        }),
-
-      toggleLeftPanel: () =>
-        set((state) => ({
-          leftPanelOpen: !state.leftPanelOpen,
-        })),
-
-      toggleRightPanel: () =>
-        set((state) => ({
-          rightPanelOpen: !state.rightPanelOpen,
-        })),
-    }),
-    {
-      name: 'ui-store',
-    }
-  )
-);
+  return {
+    ...state,
+    setLeftPanelOpen,
+    setRightPanelOpen,
+    setSettingsPanelOpen,
+    setTimerModalOpen,
+    setMessageModalOpen,
+    setRoomModalOpen,
+    setFullscreenMode,
+    setBlackoutMode,
+    setFlashMode,
+    setActiveTimerId,
+    setSelectedRoomSlug,
+    setLoading,
+    closeAllModals,
+    toggleLeftPanel,
+    toggleRightPanel,
+  };
+}

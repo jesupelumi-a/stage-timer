@@ -81,6 +81,11 @@ class SocketClient {
       this.emit('room-updated', data);
     });
 
+    this.socket.on('active-timer-updated', (data) => {
+      console.log('🎯 Active timer updated:', data);
+      this.emit('active-timer-updated', data);
+    });
+
     // Timer events
     this.socket.on('timer-started', (data) => {
       console.log('▶️ Timer started:', data);
@@ -147,23 +152,23 @@ class SocketClient {
   }
 
   // Public methods
-  joinRoom(roomSlug: string) {
+  joinRoom(roomChannel: string) {
     if (!this.socket?.connected) {
       console.warn('🔌 Socket not connected, cannot join room');
       return;
     }
-    
-    console.log('🏠 Joining room:', roomSlug);
-    this.socket.emit('join-room', roomSlug);
+
+    console.log('🏠 Joining room channel:', roomChannel);
+    this.socket.emit('join-room', roomChannel);
   }
 
-  leaveRoom(roomSlug: string) {
+  leaveRoom(roomChannel: string) {
     if (!this.socket?.connected) {
       return;
     }
-    
-    console.log('🏠 Leaving room:', roomSlug);
-    this.socket.emit('leave-room', roomSlug);
+
+    console.log('🏠 Leaving room channel:', roomChannel);
+    this.socket.emit('leave-room', roomChannel);
   }
 
   // Timer actions
@@ -181,6 +186,30 @@ class SocketClient {
 
   resetTimer(data: SocketTimerEvent) {
     this.socket?.emit('timer-reset', data);
+  }
+
+  // Get socket ID for sender identification
+  getSocketId(): string | undefined {
+    return this.socket?.id;
+  }
+
+  // Direct frontend-to-frontend broadcasting (for instant sync)
+  broadcastFrontendEvent(eventName: string, data: any) {
+    if (!this.socket?.connected) {
+      console.warn('🔌 Socket not connected, cannot broadcast frontend event');
+      return;
+    }
+
+    console.log('📡 Broadcasting frontend event directly to room:', eventName, data);
+    // Broadcast directly to all clients in the room (including self)
+    this.socket.emit('broadcast-to-room', {
+      roomChannel: `room-${data.roomId}`,
+      eventName,
+      eventData: {
+        ...data,
+        senderId: this.socket.id, // Add sender ID
+      },
+    });
   }
 
   updateTimer(data: SocketTimerEvent) {
@@ -207,6 +236,10 @@ class SocketClient {
   // Room actions
   updateRoom(data: SocketRoomEvent) {
     this.socket?.emit('room-update', data);
+  }
+
+  changeActiveTimer(data: { roomId: number; activeTimerId: number | null; timestamp: number }) {
+    this.socket?.emit('active-timer-changed', data);
   }
 
   // Event listener management

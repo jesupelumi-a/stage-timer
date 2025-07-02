@@ -8,6 +8,13 @@
       "when": 1750628601115,
       "tag": "0000_plain_angel",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1751140906560,
+      "tag": "0001_soft_iron_monger",
+      "breakpoints": true
     }
   ]
 }

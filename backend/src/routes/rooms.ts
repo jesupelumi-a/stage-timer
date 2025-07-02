@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '../db/connection';
-import { rooms, timers } from '@stage-timer/db';
+import { rooms, timers, timerSessions, messages } from '@stage-timer/db';
 import type { NewRoom } from '@stage-timer/db';
 
 const router = Router();
@@ -9,7 +9,9 @@ const router = Router();
 // Get all rooms
 router.get('/', async (_req: Request, res: Response) => {
   try {
+    console.log('📡 GET /api/rooms - Fetching all rooms');
     const allRooms = await db.select().from(rooms);
+    console.log(`📡 Found ${allRooms.length} rooms`);
     res.json(allRooms);
   } catch (error) {
     console.error('Error fetching rooms:', error);
@@ -17,11 +19,13 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 });
 
-// Get room by slug with timers
+// Get room by slug with all data (timers, sessions, messages)
 router.get('/:slug', async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
+    console.log(`📡 GET /api/rooms/${slug} - Fetching room with all data`);
 
+    // Get room
     const room = await db
       .select()
       .from(rooms)
@@ -33,16 +37,70 @@ router.get('/:slug', async (req: Request, res: Response) => {
       return;
     }
 
+    const roomData = room[0];
+
+    // Get all timers for this room
     const roomTimers = await db
       .select()
       .from(timers)
-      .where(eq(timers.roomId, room[0].id))
+      .where(eq(timers.roomId, roomData.id))
       .orderBy(timers.index);
 
-    res.json({
-      ...room[0],
-      timers: roomTimers,
-    });
+    // Get all timer sessions for this room
+    const timerSession = await db.query.timerSessions.findFirst();
+
+    // Get all messages for timers in this room
+    const timerIds = roomTimers.map((t) => t.id);
+    const roomMessages =
+      timerIds.length > 0
+        ? await db
+            .select()
+            .from(messages)
+            .where(inArray(messages.timerId, timerIds))
+            .orderBy(messages.index)
+        : [];
+
+    // Find active timer and its session
+    const activeTimer = roomTimers.find((t) => t.id === roomData.activeTimerId);
+
+    // Build response similar to stagetimer.io format
+    const response = {
+      // Room metadata
+      ...roomData,
+
+      // Timer session data (current active timer state)
+      timeset: timerSession
+        ? {
+            timerId: timerSession.timerId,
+            running: timerSession.status === 'running',
+            deadline: timerSession.deadline || null,
+            kickoff: timerSession.kickoff || null,
+            lastStop: timerSession.lastStop || null,
+            currentTime:
+              timerSession.deadline && timerSession.kickoff
+                ? timerSession.deadline - timerSession.kickoff
+                : null,
+            status: timerSession.status,
+          }
+        : null,
+
+      // Timers data
+      timers: {
+        items: roomTimers,
+        sorted: roomTimers, // Already sorted by index
+        active: activeTimer || null,
+      },
+
+      // Messages data
+      messages: {
+        items: roomMessages,
+        sorted: roomMessages, // Already sorted by index
+        // active:     roomMessages.find((m) => m.id === roomData.activeMessageId) || null,
+        // activeId: roomData.activeMessageId,
+      },
+    };
+
+    res.json(response);
   } catch (error) {
     console.error('Error fetching room:', error);
     res.status(500).json({ error: 'Failed to fetch room' });
@@ -67,9 +125,7 @@ router.post('/', async (req: Request, res: Response) => {
       .limit(1);
 
     if (existingRoom.length > 0) {
-      res
-        .status(409)
-        .json({ error: 'Room with this slug already exists' });
+      res.status(409).json({ error: 'Room with this slug already exists' });
       return;
     }
 
@@ -91,16 +147,20 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:slug', async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
-    const { name } = req.body;
+    const { name, activeTimerId } = req.body;
 
-    if (!name) {
-      res.status(400).json({ error: 'Name is required' });
+    if (!name && activeTimerId === undefined) {
+      res.status(400).json({ error: 'Name or activeTimerId is required' });
       return;
     }
 
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (activeTimerId !== undefined) updateData.activeTimerId = activeTimerId;
+
     const [updatedRoom] = await db
       .update(rooms)
-      .set({ name })
+      .set(updateData)
       .where(eq(rooms.slug, slug))
       .returning();
 

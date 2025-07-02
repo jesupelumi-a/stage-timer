@@ -1,0 +1,2 @@
+ALTER TABLE "rooms" ADD COLUMN "active_timer_id" integer;--> statement-breakpoint
+ALTER TABLE "rooms" ADD CONSTRAINT "rooms_active_timer_id_timers_id_fk" FOREIGN KEY ("active_timer_id") REFERENCES "public"."timers"("id") ON DELETE no action ON UPDATE no action;

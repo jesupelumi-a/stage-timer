@@ -1,38 +1,48 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useStageTimer } from '../hooks/use-stage-timer';
+import { useAppState } from '../hooks/use-app-state';
 import { useUIStore } from '../stores/ui-store';
-// import { useTimerStore } from '../stores/timer-store';
 import { TimerPreview } from '../components/timer-preview';
 import { MessagePanel } from '../components/message-panel';
-// import { CountdownRenderer } from '../components/countdown-renderer';
 import { cn } from '../lib/utils';
 
 export function DisplayRoute() {
   const { roomSlug } = useParams<{ roomSlug: string }>();
   const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   const { blackoutMode, flashMode } = useUIStore();
-  const { activeTimerId } = useUIStore();
-  
+  const [activeTimerId, setActiveTimerId] = useState<number | null>(null);
+
   const {
-    room,
-    timers,
-    isLoading,
+    currentRoom,
+    loading,
     isConnected,
-  } = useStageTimer({ 
-    roomSlug: roomSlug || '', 
-    isController: false 
-  });
-  
+    loadRoom,
+    getTimerSession,
+  } = useAppState();
+
+  // Initialize active timer from room data
+  useEffect(() => {
+    if (currentRoom?.activeTimerId && !activeTimerId) {
+      setActiveTimerId(currentRoom.activeTimerId);
+    }
+  }, [currentRoom?.activeTimerId, activeTimerId]);
+
+  // Load room data when component mounts
+  useEffect(() => {
+    if (roomSlug) {
+      loadRoom(roomSlug);
+    }
+  }, [roomSlug, loadRoom]);
+
   // Redirect if no room slug
   useEffect(() => {
     if (!roomSlug) {
       navigate('/');
     }
   }, [roomSlug, navigate]);
-  
+
   // Handle fullscreen
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -42,11 +52,11 @@ export function DisplayRoute() {
         exitFullscreen();
       }
     };
-    
+
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
   }, []);
-  
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
@@ -56,21 +66,24 @@ export function DisplayRoute() {
       setIsFullscreen(false);
     }
   };
-  
+
   const exitFullscreen = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen();
       setIsFullscreen(false);
     }
   };
-  
+
   // Get active timer
-  const activeTimer = timers?.find(timer => 
-    timer.id.toString() === activeTimerId
-  ) || timers?.[0];
-  
+  const activeTimer = currentRoom?.timers?.find(timer =>
+    timer.id === activeTimerId
+  ) || currentRoom?.timers?.[0];
+
+  // Get active timer session
+  const activeTimerSession = activeTimerId ? getTimerSession(activeTimerId) : null;
+
   // Loading state
-  if (isLoading) {
+  if (loading.room) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -80,9 +93,9 @@ export function DisplayRoute() {
       </div>
     );
   }
-  
+
   // Error state
-  if (!room) {
+  if (!currentRoom) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -136,12 +149,42 @@ export function DisplayRoute() {
           </div>
         </div>
       )}
-      
+
+      {/* Timer Session Sync Status (only when active timer and connected) */}
+      {activeTimerId && isConnected && !isFullscreen && (
+        <div className="absolute top-16 right-4 z-50">
+          <div className={cn(
+            'flex items-center gap-2 px-3 py-2 backdrop-blur-sm rounded-lg border',
+            activeTimerSession
+              ? 'bg-blue-900/80 border-blue-500'
+              : 'bg-gray-900/80 border-gray-500'
+          )}>
+            <div className={cn(
+              'w-2 h-2 rounded-full',
+              activeTimerSession
+                ? 'bg-blue-500'
+                : 'bg-gray-500'
+            )} />
+            <span className={cn(
+              'text-sm',
+              activeTimerSession
+                ? 'text-blue-400'
+                : 'text-gray-400'
+            )}>
+              {activeTimerSession
+                ? 'Timer Synced'
+                : 'No Timer Data'
+              }
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Room Info (only when not fullscreen) */}
       {!isFullscreen && (
         <div className="absolute top-4 left-4 z-40">
           <div className="flex items-center gap-2 px-3 py-2 bg-black/80 backdrop-blur-sm rounded-lg border border-neutral-700">
-            <span className="text-neutral-400 text-sm">{room.name}</span>
+            <span className="text-neutral-400 text-sm">{currentRoom.name}</span>
             <div className={cn(
               'w-2 h-2 rounded-full',
               isConnected ? 'bg-green-500' : 'bg-red-500'
@@ -179,8 +222,19 @@ export function DisplayRoute() {
               <div className="mb-6">
                 <TimerPreview
                   timer={activeTimer}
+                  timerName={activeTimer.name}
                   isActive={true}
-                  className="mx-auto max-w-4xl"
+                  displayMode="display"
+                  onToggleFullscreen={toggleFullscreen}
+                  className="mx-auto max-w-4xl aspect-video"
+                  serverTimerState={activeTimerSession ? {
+                    currentTime: activeTimerSession.currentTime,
+                    isRunning: activeTimerSession.isRunning,
+                    kickoff: activeTimerSession.kickoff || null,
+                    deadline: activeTimerSession.deadline || null,
+                    lastStop: null, // Not used in simplified state
+                    elapsedTime: 0, // Will be calculated dynamically
+                  } : undefined}
                 />
               </div>
               
@@ -203,24 +257,26 @@ export function DisplayRoute() {
           /* No Active Timer */
           <div className="text-center">
             <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6">
-              {room.name}
+              {currentRoom.name}
             </h1>
             <p className="text-xl text-neutral-400 mb-8">
-              {timers && timers.length > 0 
+              {currentRoom.timers && currentRoom.timers.length > 0
                 ? 'No active timer selected'
                 : 'No timers configured'
               }
             </p>
-            
+
             {/* Show all timers if no active timer */}
-            {timers && timers.length > 0 && (
+            {currentRoom.timers && currentRoom.timers.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl">
-                {timers.slice(0, 6).map((timer) => (
+                {currentRoom.timers.slice(0, 6).map((timer) => (
                   <TimerPreview
                     key={timer.id}
                     timer={timer}
+                    timerName={timer.name}
                     isActive={false}
-                    className="opacity-75"
+                    displayMode="display"
+                    className="opacity-75 aspect-video"
                   />
                 ))}
               </div>
@@ -228,10 +284,10 @@ export function DisplayRoute() {
           </div>
         )}
       </div>
-      
+
       {/* Message Overlay */}
       <MessagePanel
-        roomId={room.id}
+        roomId={currentRoom.id}
         timerId={activeTimer?.id}
         isController={false}
         className="absolute inset-0 pointer-events-none"

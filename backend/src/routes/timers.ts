@@ -1,8 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../db/connection';
 import { timers, rooms, timerSessions, messages } from '@stage-timer/db';
 import type { NewTimer } from '@stage-timer/db';
+import { formatTimerSessionResponse } from '../lib/timer-calculations';
 
 const router = Router();
 
@@ -117,6 +118,11 @@ router.post('/', async (req: Request, res: Response) => {
         ? Math.max(...existingTimers.map((t) => t.index)) + 1
         : 0;
 
+    // Convert startTime string to Date if needed
+    if (otherFields.startTime && typeof otherFields.startTime === 'string') {
+      otherFields.startTime = new Date(otherFields.startTime);
+    }
+
     const newTimer: NewTimer = {
       roomId: room[0].id,
       name,
@@ -148,6 +154,11 @@ router.put('/:id', async (req: Request, res: Response) => {
     delete updateData.roomId;
     delete updateData.createdAt;
 
+    // Convert startTime string to Date if needed
+    if (updateData.startTime && typeof updateData.startTime === 'string') {
+      updateData.startTime = new Date(updateData.startTime);
+    }
+
     const [updatedTimer] = await db
       .update(timers)
       .set({ ...updateData, updatedAt: new Date() })
@@ -159,6 +170,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       return;
     }
 
+    // Return just the updated timer (flattened)
     res.json(updatedTimer);
   } catch (error) {
     console.error('Error updating timer:', error);
@@ -166,14 +178,89 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Reorder timers - bulk update indices
+router.patch('/reorder', async (req: Request, res: Response) => {
+  try {
+    console.log('Reorder request received:', req.body);
+    const { timerIds } = req.body;
+
+    if (!timerIds || !Array.isArray(timerIds)) {
+      console.error('Invalid timerIds:', timerIds);
+      res.status(400).json({ error: 'timerIds array is required' });
+      return;
+    }
+
+    console.log('Processing timer IDs:', timerIds);
+
+    // Validate and convert timer IDs to integers
+    const validTimerIds: number[] = [];
+    for (let i = 0; i < timerIds.length; i++) {
+      const id = timerIds[i];
+      console.log(`Processing ID at index ${i}:`, id, 'type:', typeof id);
+      
+      // Handle both string and number inputs
+      const parsedId = typeof id === 'number' ? id : parseInt(String(id), 10);
+      console.log(`Parsed ID:`, parsedId);
+      
+      if (isNaN(parsedId) || parsedId <= 0) {
+        console.error(`Invalid timer ID at index ${i}:`, id, 'parsed as:', parsedId);
+        res.status(400).json({ error: `Invalid timer ID at position ${i}: ${id}` });
+        return;
+      }
+      validTimerIds.push(parsedId);
+    }
+
+    console.log('Valid timer IDs:', validTimerIds);
+
+    // Update each timer's index based on its position in the array
+    const updatePromises = validTimerIds.map((timerId: number, index: number) => {
+      console.log(`Updating timer ${timerId} to index ${index}`);
+      return db
+        .update(timers)
+        .set({ index, updatedAt: new Date() })
+        .where(eq(timers.id, timerId))
+        .returning();
+    });
+
+    const updatedTimers = await Promise.all(updatePromises);
+    const flatResults = updatedTimers.map(result => result[0]).filter(Boolean);
+
+    console.log('Reorder completed, updated timers:', flatResults.length);
+    res.json(flatResults);
+  } catch (error) {
+    console.error('Error reordering timers:', error);
+    res.status(500).json({ error: 'Failed to reorder timers' });
+  }
+});
+
 // Delete timer
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const timerId = parseInt(id);
 
+    // First check if this timer is the active timer for any room
+    const roomsWithActiveTimer = await db
+      .select()
+      .from(rooms)
+      .where(eq(rooms.activeTimerId, timerId));
+
+    // If this timer is active in any room(s), clear the activeTimerId first
+    if (roomsWithActiveTimer.length > 0) {
+      await Promise.all(
+        roomsWithActiveTimer.map(room =>
+          db
+            .update(rooms)
+            .set({ activeTimerId: null })
+            .where(eq(rooms.id, room.id))
+        )
+      );
+    }
+
+    // Now delete the timer
     const [deletedTimer] = await db
       .delete(timers)
-      .where(eq(timers.id, parseInt(id)))
+      .where(eq(timers.id, timerId))
       .returning();
 
     if (!deletedTimer) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSocket } from '../hooks/use-socket';
+// Removed useSocket dependency - using socketClient directly
 import socketClient from '../lib/socket-client';
 import { cn } from '../lib/utils';
 import type { Message } from '@stage-timer/db';
@@ -29,7 +29,7 @@ export function MessagePanel({
   // const [messageQueue, setMessageQueue] = useState<DisplayMessage[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   
-  const socket = useSocket();
+  // Using socketClient directly instead of useSocket hook
   
   // Handle incoming message events
   useEffect(() => {
@@ -68,7 +68,7 @@ export function MessagePanel({
       socketClient.off('message-hidden', handleMessageHidden);
       socketClient.off('message-updated', handleMessageUpdated);
     };
-  }, [socket, roomId, currentMessage]);
+  }, [roomId, currentMessage]);
   
   // Auto-hide message after duration
   useEffect(() => {
@@ -83,9 +83,9 @@ export function MessagePanel({
   
   // Show message
   const showMessage = (message: DisplayMessage) => {
-    if (!socket.isConnected || !timerId) return;
-    
-    socket.showMessage({
+    if (!timerId) return;
+
+    socketClient.showMessage({
       roomId,
       timerId,
       message: {
@@ -106,9 +106,9 @@ export function MessagePanel({
   
   // Hide current message
   const hideMessage = () => {
-    if (!socket.isConnected || !timerId || !currentMessage) return;
-    
-    socket.hideMessage({
+    if (!timerId || !currentMessage) return;
+
+    socketClient.hideMessage({
       roomId,
       timerId,
       message: {
@@ -238,7 +238,7 @@ export function MessagePanel({
                 key={index}
                 onClick={() => showMessage(message)}
                 className="p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-left transition-colors"
-                disabled={!socket.isConnected}
+                disabled={false}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <div 
@@ -268,7 +268,7 @@ export function MessagePanel({
                     isVisible: false,
                   })}
                   className="w-full p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-left transition-colors"
-                  disabled={!socket.isConnected}
+                  disabled={false}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <div 
@@ -287,7 +287,7 @@ export function MessagePanel({
         )}
         
         {/* Connection Status */}
-        {!socket.isConnected && (
+        {false && (
           <div className="p-3 bg-yellow-900/20 border border-yellow-500 rounded-lg">
             <p className="text-yellow-400 text-sm">
               Not connected to server. Messages cannot be sent.

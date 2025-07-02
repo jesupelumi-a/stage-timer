@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoomSettings } from '../components/room-settings';
-import { useOverallHealth } from '../hooks/use-health';
+import { useAppState } from '../hooks/use-app-state';
 import { cn } from '../lib/utils';
 
 export function RoomSelectionRoute() {
   const [deviceRole, setDeviceRole] = useState<'controller' | 'display'>('controller');
   const navigate = useNavigate();
-  const { isHealthy, status } = useOverallHealth();
+  const { isConnected } = useAppState();
   
   const handleRoomSelect = (roomSlug: string) => {
     if (deviceRole === 'controller') {
@@ -26,14 +26,14 @@ export function RoomSelectionRoute() {
             <div className="flex items-center gap-4">
               <h1 className="text-2xl font-bold text-white">StageTimer</h1>
               <div className="flex items-center gap-2">
-                <div 
+                <div
                   className={cn(
                     'w-2 h-2 rounded-full',
-                    isHealthy ? 'bg-green-500' : 'bg-red-500'
+                    isConnected ? 'bg-green-500' : 'bg-red-500'
                   )}
                 />
                 <span className="text-xs text-neutral-400 capitalize">
-                  {status}
+                  {isConnected ? 'connected' : 'disconnected'}
                 </span>
               </div>
             </div>

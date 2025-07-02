@@ -39,6 +39,7 @@ export const rooms = pgTable('rooms', {
   id: serial('id').primaryKey(),
   slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
+  activeTimerId: integer('active_timer_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -68,7 +69,7 @@ export const timers = pgTable('timers', {
 
 export const timerSessions = pgTable('timer_sessions', {
   id: serial('id').primaryKey(),
-  timerId: integer('timer_id').references(() => timers.id).notNull(),
+  timerId: integer('timer_id').references(() => timers.id).notNull(), // Links to timer
   kickoff: bigint('kickoff', { mode: 'number' }), // Unix timestamp in ms
   deadline: bigint('deadline', { mode: 'number' }), // Unix timestamp in ms
   lastStop: bigint('last_stop', { mode: 'number' }), // Unix timestamp in ms

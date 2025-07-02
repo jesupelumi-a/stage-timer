@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useRooms, useCreateRoom, useUpdateRoom } from '../hooks/use-rooms';
-import { useRoomStore } from '../stores/room-store';
+import { useAppState } from '../hooks/use-app-state';
 import { useUIStore } from '../stores/ui-store';
 import { cn } from '../lib/utils';
 import type { NewRoom } from '@stage-timer/db';
@@ -14,20 +13,20 @@ export function RoomSettings({ className = '', onRoomSelect }: RoomSettingsProps
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomSlug, setNewRoomSlug] = useState('');
-  
-  const { 
-    currentRoomSlug, 
-    currentRoomName, 
-    recentRooms, 
-    connectionStatus,
-    setCurrentRoom 
-  } = useRoomStore();
-  
+
+  const {
+    rooms,
+    loading,
+    createRoom,
+    loadRooms,
+  } = useAppState();
+
   const { setSelectedRoomSlug } = useUIStore();
-  
-  const { data: rooms, isLoading: isLoadingRooms } = useRooms();
-  const createRoomMutation = useCreateRoom();
-  const updateRoomMutation = useUpdateRoom();
+
+  // Load rooms when component mounts
+  useEffect(() => {
+    loadRooms();
+  }, [loadRooms]);
   
   // Auto-generate slug from name
   useEffect(() => {
@@ -44,7 +43,6 @@ export function RoomSettings({ className = '', onRoomSelect }: RoomSettingsProps
   
   // Handle room selection
   const handleRoomSelect = (roomSlug: string, roomName: string) => {
-    setCurrentRoom(roomSlug, roomName);
     setSelectedRoomSlug(roomSlug);
     onRoomSelect?.(roomSlug);
   };
@@ -61,7 +59,7 @@ export function RoomSettings({ className = '', onRoomSelect }: RoomSettingsProps
         slug: newRoomSlug.trim(),
       };
       
-      const createdRoom = await createRoomMutation.mutateAsync(newRoom);
+      const createdRoom = await createRoom(newRoom);
       
       // Select the new room
       handleRoomSelect(createdRoom.slug, createdRoom.name);
@@ -91,79 +89,47 @@ export function RoomSettings({ className = '', onRoomSelect }: RoomSettingsProps
   
   return (
     <div className={cn('space-y-6', className)}>
-      {/* Current Room */}
+      {/* Available Rooms */}
       <div>
-        <h3 className="text-lg font-semibold text-white mb-3">Current Room</h3>
-        
-        {currentRoomSlug ? (
-          <div className="p-4 bg-green-900/20 border border-green-500 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-white">{currentRoomName}</h4>
-                <p className="text-sm text-green-400">/{currentRoomSlug}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div 
-                  className={cn(
-                    'w-3 h-3 rounded-full',
-                    connectionStatus === 'connected' ? 'bg-green-500' :
-                    connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
-                    'bg-red-500'
-                  )}
-                />
-                <span className="text-xs text-neutral-400 capitalize">
-                  {connectionStatus}
-                </span>
-              </div>
-            </div>
-          </div>
-        ) : (
+        <h3 className="text-lg font-semibold text-white mb-3">Available Rooms</h3>
+
+        {loading.rooms ? (
           <div className="p-4 bg-neutral-800 border border-neutral-600 rounded-lg">
-            <p className="text-neutral-400">No room selected</p>
+            <p className="text-neutral-400">Loading rooms...</p>
           </div>
-        )}
-      </div>
-      
-      {/* Recent Rooms */}
-      {recentRooms.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-3">Recent Rooms</h3>
+        ) : rooms.length > 0 ? (
           <div className="space-y-2">
-            {recentRooms.slice(0, 5).map((room) => (
+            {rooms.map((room) => (
               <button
                 key={room.slug}
                 onClick={() => handleRoomSelect(room.slug, room.name)}
-                className={cn(
-                  'w-full p-3 rounded-lg text-left transition-colors',
-                  currentRoomSlug === room.slug
-                    ? 'bg-blue-900/20 border border-blue-500'
-                    : 'bg-neutral-800 hover:bg-neutral-700 border border-neutral-600'
-                )}
+                className="w-full p-3 rounded-lg text-left transition-colors bg-neutral-800 hover:bg-neutral-700 border border-neutral-600"
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-medium text-white">{room.name}</h4>
                     <p className="text-sm text-neutral-400">/{room.slug}</p>
                   </div>
-                  <span className="text-xs text-neutral-500">
-                    {new Date(room.lastAccessed).toLocaleDateString()}
-                  </span>
                 </div>
               </button>
             ))}
           </div>
-        </div>
-      )}
-      
-      {/* All Rooms */}
+        ) : (
+          <div className="p-4 bg-neutral-800 border border-neutral-600 rounded-lg">
+            <p className="text-neutral-400">No rooms available</p>
+          </div>
+        )}
+      </div>
+
+      {/* Create Room */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-white">All Rooms</h3>
+          <h3 className="text-lg font-semibold text-white">Create New Room</h3>
           <button
-            onClick={() => setIsCreatingRoom(true)}
+            onClick={() => setIsCreatingRoom(!isCreatingRoom)}
             className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
           >
-            Create Room
+            {isCreatingRoom ? 'Cancel' : 'Create Room'}
           </button>
         </div>
         
@@ -206,10 +172,10 @@ export function RoomSettings({ className = '', onRoomSelect }: RoomSettingsProps
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  disabled={createRoomMutation.isPending}
+                  disabled={loading.rooms}
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded text-sm"
                 >
-                  {createRoomMutation.isPending ? 'Creating...' : 'Create'}
+                  {loading.rooms ? 'Creating...' : 'Create'}
                 </button>
                 <button
                   type="button"
@@ -228,7 +194,7 @@ export function RoomSettings({ className = '', onRoomSelect }: RoomSettingsProps
         )}
         
         {/* Rooms List */}
-        {isLoadingRooms ? (
+        {loading.rooms ? (
           <div className="flex items-center justify-center p-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
           </div>
@@ -240,7 +206,7 @@ export function RoomSettings({ className = '', onRoomSelect }: RoomSettingsProps
                 onClick={() => handleRoomSelect(room.slug, room.name)}
                 className={cn(
                   'w-full p-3 rounded-lg text-left transition-colors',
-                  currentRoomSlug === room.slug
+                  false // Simplified - no current room tracking
                     ? 'bg-blue-900/20 border border-blue-500'
                     : 'bg-neutral-800 hover:bg-neutral-700 border border-neutral-600'
                 )}
@@ -265,22 +231,7 @@ export function RoomSettings({ className = '', onRoomSelect }: RoomSettingsProps
         )}
       </div>
       
-      {/* Error Messages */}
-      {createRoomMutation.isError && (
-        <div className="p-3 bg-red-900/20 border border-red-500 rounded-lg">
-          <p className="text-red-400 text-sm">
-            Failed to create room: {createRoomMutation.error?.message}
-          </p>
-        </div>
-      )}
-      
-      {updateRoomMutation.isError && (
-        <div className="p-3 bg-red-900/20 border border-red-500 rounded-lg">
-          <p className="text-red-400 text-sm">
-            Failed to update room: {updateRoomMutation.error?.message}
-          </p>
-        </div>
-      )}
+
     </div>
   );
 }

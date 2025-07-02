@@ -1,8 +1,11 @@
+import { heroui } from '@heroui/react';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -25,9 +28,16 @@ export default {
           950: '#0a0a0a',
         },
       },
+      keyframes: {
+        'stripes': {
+          '0%': { backgroundPosition: '0 0' },
+          '100%': { backgroundPosition: '40px 0' },
+        },
+      },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'bounce-slow': 'bounce 2s infinite',
+        'stripes': 'stripes 1s linear infinite',
       },
       aspectRatio: {
         'video': '16 / 9',
@@ -37,5 +47,6 @@ export default {
       },
     },
   },
-  plugins: [],
+  darkMode: "class",
+  plugins: [heroui()],
 }
